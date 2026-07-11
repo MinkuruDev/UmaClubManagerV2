@@ -1,0 +1,3 @@
+[tool.fastapi]
+entrypoint = "api.app:app"
+port = 3636
