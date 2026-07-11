@@ -33,11 +33,16 @@ def add_or_update_member(id, **kwargs):
     else:
         print(f"Adding new member with ID: {id}")
         members_data[id] = kwargs
+    
+    if "discord_id" in kwargs and kwargs["discord_id"]:
+        discord_id = str(kwargs["discord_id"])
+        if "discord_link" not in members_data:
+            members_data["discord_link"] = {}
+        members_data["discord_link"][discord_id] = id
 
 def load_from_raw_file(club_profile_path):
     with open(club_profile_path, 'r') as f:
         club_profile = json.load(f)
-    print(members_data)
     for member in club_profile.get('club_friend_profile', []):
         ingame_id = member.get('friend_viewer_id')
         if ingame_id:

@@ -119,4 +119,38 @@ async def link_discord(ctx: discord.Interaction, user: discord.User, ingame_id: 
         except Exception as e:
             await confirm_msg.edit(content=f"Error occurred while updating link: {e}", view=None)
 
+@tree.command(name="update_username", description="Update the Discord username for all linked member")
+async def update_username(ctx: discord.Interaction):
+    await ctx.response.defer(ephemeral=True)
+    if not is_leader(str(ctx.user.id)):
+        await ctx.followup.send("You are not authorized to update usernames. Only leaders can perform this action.", ephemeral=True)
+        return
+
+    try:
+        response = api_session.get(f"{api_url}/members")
+    except Exception as e:
+        await ctx.followup.send(f"Error connecting to backend API: {e}", ephemeral=True)
+        return
+
+    if response.status_code != 200:
+        await ctx.followup.send(f"Failed to fetch members from backend (HTTP {response.status_code}): {response.text}", ephemeral=True)
+        return
+
+    members = response.json()
+    updated_count = 0
+    for member in members:
+        discord_id = member.get("discord_id")
+        if discord_id:
+            try:
+                discord_user = ctx.guild.get_member(int(discord_id))
+                if discord_user:
+                    member["discord_username"] = str(discord_user)
+                    update_response = api_session.post(f"{api_url}/members/{member['ingame_id']}", json=member)
+                    if update_response.status_code == 200:
+                        updated_count += 1
+            except Exception as e:
+                print(f"Error fetching Discord user with ID {discord_id}: {e}")
+
+    await ctx.followup.send(f"Updated Discord usernames for {updated_count} members.", ephemeral=True)
+
 client.run(TOKEN)

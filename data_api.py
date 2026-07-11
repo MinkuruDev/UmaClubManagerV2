@@ -20,7 +20,8 @@ response = requests.get(
 
 if response.status_code == 200:
     data = response.json()
-    with open("club_profile.json", "w") as f:
-        json.dump(data, f, indent=2)
+    with open("data/club_profile.json", "w") as f:
+        json.dump(data, f, indent=4)
 else:
     print(f"Failed to fetch data: {response.status_code} - {response.text}")
+    exit(1)

@@ -1,16 +1,13 @@
 import os
-
 import fastapi
+import member_manager
+import fan_counter
+
+from fan_counter import fan_data
+from member_manager import Member, members_data
 from dotenv import load_dotenv
 from fastapi import Depends, Header, HTTPException
 from typing import Annotated
-
-try:
-    from . import member_manager
-    from .member_manager import Member, members_data
-except ImportError:  # pragma: no cover - allows running the file directly
-    import member_manager
-    from member_manager import Member, members_data
 
 load_dotenv()
 app = fastapi.FastAPI()
@@ -20,7 +17,6 @@ def require_admin(authorization: Annotated[str | None, Header(alias="Authorizati
     if not ADMIN_TOKEN:
         raise HTTPException(status_code=500, detail="Admin token is not configured")
     if authorization != f"Bearer {ADMIN_TOKEN}":
-        print(f"Unauthorized access attempt with token: {authorization}")
         raise HTTPException(status_code=401, detail="Unauthorized")
     
 @app.get("/")
@@ -40,10 +36,13 @@ def get_member(member_id: str):
 
 @app.get("/members/discord/{discord_id}")
 def get_member_by_discord_id(discord_id: str):
-    for member in members_data.values():
-        if member.get("discord_id") == discord_id:
+    discord_link = members_data.get("discord_link", {})
+    if discord_id in discord_link:
+        ingame_id = discord_link[discord_id]
+        member = members_data.get(ingame_id)
+        if member:
             return member
-    raise HTTPException(status_code=404, detail="Member not found or not linked to Discord")
+    raise HTTPException(status_code=404, detail=f"Member with Discord ID {discord_id} not found")
 
 @app.post("/members/{member_id}")
 def update_member(member_id: str, member: Member, _=Depends(require_admin)):
@@ -68,6 +67,16 @@ def update_member(member_id: str, member: Member, _=Depends(require_admin)):
     member_manager.add_or_update_member(member_id, **update_fields)
     member_manager.save_members_data()
     return {"message": "Member updated successfully", "member": member}
+
+@app.get("/fan_data/{ingame_id}")
+def get_fan_data(ingame_id: str):
+    if ingame_id not in fan_data:
+        raise HTTPException(status_code=404, detail="Fan data not found")
+    # Return the latest 30 days of fan data and monthly fan count of that ingame_id
+    return {
+        "fan_data": fan_data[ingame_id][:30],
+        "monthly_fans": fan_data["total"].get(ingame_id, 0)
+    }
 
 if __name__ == "__main__":
     print(len(ADMIN_TOKEN))
