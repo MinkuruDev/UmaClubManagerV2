@@ -26,6 +26,7 @@ def save_members_data():
         json.dump(members_data, f, indent=4)
 
 def add_or_update_member(id, **kwargs):
+    id = str(id)
     if id in members_data:
         print(f"Updating member with ID: {id}")
         members_data[id].update(kwargs)

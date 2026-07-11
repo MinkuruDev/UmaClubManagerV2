@@ -49,6 +49,7 @@ def get_member_by_discord_id(discord_id: str):
 def update_member(member_id: str, member: Member, _=Depends(require_admin)):
     if member_id not in members_data:
         member_manager.add_or_update_member(member_id, **member.model_dump())
+        member_manager.save_members_data()
         return {"message": "Member created successfully", "member": member}
 
     if not (member.ingame_name or member.join_time or member.discord_id or member.discord_username):
