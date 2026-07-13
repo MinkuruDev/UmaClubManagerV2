@@ -28,10 +28,10 @@ def save_members_data():
 def add_or_update_member(id, **kwargs):
     id = str(id)
     if id in members_data:
-        print(f"Updating member with ID: {id}")
+        # print(f"Updating member with ID: {id}")
         members_data[id].update(kwargs)
     else:
-        print(f"Adding new member with ID: {id}")
+        # print(f"Adding new member with ID: {id}")
         members_data[id] = kwargs
     
     if "discord_id" in kwargs and kwargs["discord_id"]:

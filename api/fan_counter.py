@@ -64,7 +64,7 @@ def auto_load_fan_data():
     for ingame_id, daily_data in fan_data.items():
         if ingame_id != "total":
             daily_data.sort(key=lambda x: x["date"], reverse=True)
-    print(fan_data["205831989943"])
+    # print(fan_data["205831989943"])
 
 auto_load_fan_data()
 

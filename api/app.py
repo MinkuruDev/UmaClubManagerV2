@@ -1,5 +1,6 @@
 import os
 import fastapi
+import source_data_api
 import member_manager
 import fan_counter
 
@@ -12,6 +13,7 @@ from typing import Annotated
 load_dotenv()
 app = fastapi.FastAPI()
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN")
+DATA_DIR = "../data"
 
 def require_admin(authorization: Annotated[str | None, Header(alias="Authorization")] = None):
     if not ADMIN_TOKEN:
@@ -22,6 +24,18 @@ def require_admin(authorization: Annotated[str | None, Header(alias="Authorizati
 @app.get("/")
 def read_root():
     return {"Application": "Uma Club Manager API", "Version": "2.0.0"}
+
+@app.post("/full_update")
+def full_update(_=Depends(require_admin)):
+    updated, reason = source_data_api.fetch_club_profile()
+    if not updated:
+        raise HTTPException(503, reason)
+    
+    member_manager.load_from_raw_file(f"{DATA_DIR}/club_profile.json")
+    member_manager.save_members_data()
+    fan_counter.load_from_raw_file(f"{DATA_DIR}/club_profile.json")
+    fan_counter.auto_load_fan_data()
+    return {"message": "Full update completed successfully"}
 
 @app.get("/members")
 def get_members():
@@ -67,6 +81,10 @@ def update_member(member_id: str, member: Member, _=Depends(require_admin)):
     member_manager.add_or_update_member(member_id, **update_fields)
     member_manager.save_members_data()
     return {"message": "Member updated successfully", "member": member}
+
+@app.get("/fan_data")
+def get_all_fan_data():
+    return fan_data
 
 @app.get("/fan_data/{ingame_id}")
 def get_fan_data(ingame_id: str):
