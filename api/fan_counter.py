@@ -19,6 +19,22 @@ def load_from_raw_file(club_profile_path):
         month += 1
 
     saving_data = {"total": {}}
+    club_daily_history = club_profile.get('club_daily_history', [])
+    for club_daily in club_daily_history:
+        if 'club_ranking' not in saving_data:
+            saving_data['club_ranking'] = []
+        club_history = saving_data['club_ranking']
+        actual_date = club_daily.get('actual_date')
+        daily_fan = club_daily.get('interpolated_fan_gain')
+        rank = club_daily.get('rank')
+        club_history.append({
+            "date": f"{year}-{month:02d}-{actual_date:02d}",
+            "fan": daily_fan,
+            "rank": rank
+        })
+        total_history = saving_data["total"].get('club_ranking', 0)
+        saving_data["total"]['club_ranking'] = total_history + daily_fan
+
     history_data = club_profile.get('club_friend_history', [])
     for member_daily in history_data:
         ingame_id = str(member_daily.get('friend_viewer_id'))

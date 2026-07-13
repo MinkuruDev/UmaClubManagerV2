@@ -29,7 +29,7 @@ def read_root():
 def full_update(_=Depends(require_admin)):
     updated, reason = source_data_api.fetch_club_profile()
     if not updated:
-        raise HTTPException(503, reason)
+        raise HTTPException(status_code=503, detail=reason)
     
     member_manager.load_from_raw_file(f"{DATA_DIR}/club_profile.json")
     member_manager.save_members_data()
@@ -56,6 +56,19 @@ def get_member_by_discord_id(discord_id: str):
         member = members_data.get(ingame_id)
         if member:
             return member
+    raise HTTPException(status_code=404, detail=f"Member with Discord ID {discord_id} not found")
+
+@app.delete("/members/discord/{discord_id}")
+def unlink_discord(discord_id: str, _=Depends(require_admin)):
+    discord_link = members_data.get("discord_link", {})
+    if discord_id in discord_link:
+        ingame_id = discord_link[discord_id]
+        member = members_data.get(ingame_id)
+        if member:
+            del member["discord_id"]
+            del member["discord_username"]
+            del discord_link[discord_id]
+            member_manager.save_members_data()
     raise HTTPException(status_code=404, detail=f"Member with Discord ID {discord_id} not found")
 
 @app.post("/members/{member_id}")

@@ -43,6 +43,7 @@ def add_or_update_member(id, **kwargs):
 def load_from_raw_file(club_profile_path):
     with open(club_profile_path, 'r') as f:
         club_profile = json.load(f)
+
     for member in club_profile.get('club_friend_profile', []):
         ingame_id = member.get('friend_viewer_id')
         if ingame_id:
@@ -51,9 +52,13 @@ def load_from_raw_file(club_profile_path):
                 ingame_name=member.get('name'),
                 join_time=member.get('join_time'),
             )
+    
+    current_member = club_profile['club'][0]['circle_user_array']
+    current_member.sort()
+    members_data["current_member"] = current_member
 
 if __name__ == "__main__":
     # Example usage: Load from a raw club profile JSON file and save to members.json
-    club_profile_path = "club_profile.json"  # Path to the raw club profile JSON file
+    club_profile_path = "../data/club_profile.json"  # Path to the raw club profile JSON file
     load_from_raw_file(club_profile_path)
     save_members_data()
