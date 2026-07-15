@@ -1,3 +1,4 @@
+import json
 import os
 import fastapi
 import source_data_api
@@ -20,10 +21,36 @@ def require_admin(authorization: Annotated[str | None, Header(alias="Authorizati
         raise HTTPException(status_code=500, detail="Admin token is not configured")
     if authorization != f"Bearer {ADMIN_TOKEN}":
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+raw_data = {}
+def load_raw_data():
+    global raw_data
+    path = f"{DATA_DIR}/club_profile.json"
+    with open(path) as f:
+        raw_data = json.load(f)
+load_raw_data()
     
 @app.get("/")
 def read_root():
     return {"Application": "Uma Club Manager API", "Version": "2.0.0"}
+
+@app.get("/raw")
+def get_raw_data(fields: str = ""):
+    try:
+        if not fields:
+            return raw_data
+        
+        data = raw_data
+        for field in fields.split(","):
+            if isinstance(data, dict):
+                data = data[field]
+            elif isinstance(data, list):
+                field = int(field)
+                data = data[field]
+        return data
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=e)
 
 @app.post("/full_update")
 def full_update(_=Depends(require_admin)):
@@ -31,6 +58,7 @@ def full_update(_=Depends(require_admin)):
     if not updated:
         raise HTTPException(status_code=503, detail=reason)
     
+    load_raw_data()
     member_manager.load_from_raw_file(f"{DATA_DIR}/club_profile.json")
     member_manager.save_members_data()
     fan_counter.load_from_raw_file(f"{DATA_DIR}/club_profile.json")
@@ -105,7 +133,7 @@ def get_fan_data(ingame_id: str):
         raise HTTPException(status_code=404, detail="Fan data not found")
     # Return the latest 30 days of fan data and monthly fan count of that ingame_id
     return {
-        "fan_data": fan_data[ingame_id][:30],
+        "fan_data": fan_data[ingame_id][:30] if isinstance(fan_data[ingame_id], list) else fan_data[ingame_id],
         "monthly_fans": fan_data["total"].get(ingame_id, 0)
     }
 

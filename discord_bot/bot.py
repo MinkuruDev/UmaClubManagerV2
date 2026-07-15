@@ -126,6 +126,7 @@ async def update_username(ctx: discord.Interaction):
         await ctx.followup.send("You are not authorized to update usernames. Only leaders can perform this action.", ephemeral=True)
         return
 
+    api_session.post(f"{api_url}/full_update")
     try:
         response = api_session.get(f"{api_url}/members")
     except Exception as e:
@@ -137,8 +138,11 @@ async def update_username(ctx: discord.Interaction):
         return
 
     members = response.json()
+    del members["discord_link"]
+    del members["current_member"]
+    
     updated_count = 0
-    for member in members:
+    for member in members.values():
         discord_id = member.get("discord_id")
         if discord_id:
             try:
@@ -152,5 +156,103 @@ async def update_username(ctx: discord.Interaction):
                 print(f"Error fetching Discord user with ID {discord_id}: {e}")
 
     await ctx.followup.send(f"Updated Discord usernames for {updated_count} members.", ephemeral=True)
+
+@tree.command(name="profile", description="View profile and fan progress")
+async def profile(ctx: discord.Interaction):
+    await ctx.response.defer()
+
+    # Fetch member info by Discord ID
+    response = api_session.get(f"{api_url}/members/discord/{ctx.user.id}")
+    if response.status_code != 200:
+        await ctx.followup.send(f"No linked in-game profile found. Please ask leader to link your account.", ephemeral=True)
+        return
+    member = response.json()
+
+    # Fetch fan data for the member
+    ingame_id = member.get("ingame_id") 
+    response = api_session.get(f"{api_url}/fan_data/{ingame_id}")
+    if response.status_code != 200:
+        await ctx.followup.send(f"Failed to fetch fan data (HTTP {response.status_code}): {response.text}", ephemeral=True)
+        return
+    fan_result = response.json()
+
+    # Fetch total fan data for ranking
+    response = api_session.get(f"{api_url}/fan_data/total")
+    if response.status_code != 200:
+        await ctx.followup.send(f"Failed to fetch fan data (HTTP {response.status_code}): {response.text}", ephemeral=True)
+        return
+    total = response.json()["fan_data"]
+    mem_fan = total[ingame_id]
+    rank = 0
+    for fan in total.values():
+        if mem_fan < fan:
+            rank += 1
+
+    daily_data = fan_result.get("fan_data", [])   # sorted newest to oldest
+    monthly_fans = fan_result.get("monthly_fans", 0)
+    ingame_name = member.get("ingame_name") or "Unknown"
+    club_name = api_session.get(f"{api_url}/raw?fields=club,0,name").json()
+
+    embed = discord.Embed(
+        title=f"📊 Profile: {ingame_name}",
+        color=discord.Color.from_rgb(255, 182, 193),
+    )
+    embed.set_thumbnail(url=ctx.user.display_avatar.url)
+    embed.set_footer(text=f"Discord: {ctx.user}", icon_url=ctx.user.display_avatar.url)
+
+    # Format a fan number: divide by 1M, round to 2 dp, append M
+    def fmt_fans(n: float) -> str:
+        return f"{n / 1_000_000:.2f}M"
+
+    # Club section
+    embed.add_field(
+        name=f"Club: {club_name}",
+        value=""
+    )
+
+    # Latest day fan
+    if daily_data:
+        latest = daily_data[0]
+        embed.add_field(
+            name="📅 Latest Day",
+            value=f"**{fmt_fans(latest['fan'])}** fans (_{latest['date']}_)",
+            inline=False
+        )
+    else:
+        embed.add_field(name="📅 Latest Day", value="No data available", inline=False)
+
+    # embed.add_field(name="\u200b", value="**── This Month ──**", inline=False)
+    embed.add_field(name="📈 Monthly Total", value=f"**{fmt_fans(monthly_fans)}** fans\nRanking in club: **#{rank}**", inline=False)
+
+    # Period totals and averages
+    def period_stats(n: int):
+        """Return (total, average) for the most recent n days, or None if not enough data."""
+        if len(daily_data) < n:
+            return None
+        slice_ = daily_data[:n]
+        total = sum(d["fan"] for d in slice_)
+        avg = total / n
+        return total, avg
+
+    embed.add_field(name="\u200b", value="**── Fan Periods ──**", inline=False)
+
+    for days, label in [(3, "3 Days"), (7, "7 Days"), (30, "30 Days")]:
+        result = period_stats(days)
+        if result is not None:
+            total, avg = result
+            embed.add_field(
+                name=f"🗓️ Last {label}",
+                value=f"Total: **{fmt_fans(total)}**\nAvg/day: **{fmt_fans(avg)}**",
+                inline=True
+            )
+        else:
+            embed.add_field(
+                name=f"🗓️ Last {label}",
+                value=f"_Not enough data ({len(daily_data)}/{days} days)_",
+                inline=True
+            )
+
+    await ctx.followup.send(embed=embed)
+
 
 client.run(TOKEN)
