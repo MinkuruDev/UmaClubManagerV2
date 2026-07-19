@@ -119,6 +119,56 @@ async def link_discord(ctx: discord.Interaction, user: discord.User, ingame_id: 
         except Exception as e:
             await confirm_msg.edit(content=f"Error occurred while updating link: {e}", view=None)
 
+@tree.command(name="unlink_discord", description="Unlink a Discord account from an in-game profile")
+async def unlink_discord(ctx: discord.Interaction, user: discord.User):
+    await ctx.response.defer(ephemeral=True)
+
+    if not is_leader(str(ctx.user.id)):
+        await ctx.followup.send("You are not authorized to unlink Discord accounts. Only leaders can perform this action.", ephemeral=True)
+        return
+
+    # Check that the user is actually linked
+    try:
+        response = api_session.get(f"{api_url}/members/discord/{user.id}")
+    except Exception as e:
+        await ctx.followup.send(f"Error connecting to backend API: {e}", ephemeral=True)
+        return
+
+    if response.status_code == 404:
+        await ctx.followup.send(f"{user.name} is not linked to any in-game profile.", ephemeral=True)
+        return
+    elif response.status_code != 200:
+        await ctx.followup.send(f"Failed to fetch member info (HTTP {response.status_code}): {response.text}", ephemeral=True)
+        return
+
+    member = response.json()
+    ingame_name = member.get("ingame_name") or "Unknown"
+    ingame_id = member.get("ingame_id") or "Unknown"
+
+    view = LinkConfirmView(expected_user_id=ctx.user.id)
+    confirm_msg = await ctx.followup.send(
+        content=f"Are you sure you want to unlink {user} from in-game profile **{ingame_name}** (ID: {ingame_id})?",
+        view=view,
+        ephemeral=True
+    )
+    await view.wait()
+
+    if view.confirmed is None:
+        await confirm_msg.edit(content="Unlink process timed out.", view=None)
+    elif view.confirmed is False:
+        await confirm_msg.edit(content="Unlink process cancelled.", view=None)
+    else:
+        await confirm_msg.edit(content="Unlinking... Please wait.", view=None)
+        try:
+            delete_response = api_session.delete(f"{api_url}/members/discord/{user.id}")
+            if delete_response.status_code == 200:
+                await confirm_msg.edit(content="Unlink confirmed.", view=None)
+                await confirm_msg.edit(f"Successfully unlinked {user.mention} from in-game profile **{ingame_name}** (ID: `{ingame_id}`).")
+            else:
+                await confirm_msg.edit(content=f"Failed to unlink (HTTP {delete_response.status_code}): {delete_response.text}", view=None)
+        except Exception as e:
+            await confirm_msg.edit(content=f"Error occurred while unlinking: {e}", view=None)
+
 @tree.command(name="update_username", description="Update the Discord username for all linked member")
 async def update_username(ctx: discord.Interaction):
     await ctx.response.defer(ephemeral=True)
@@ -206,7 +256,7 @@ async def profile(ctx: discord.Interaction):
 
     # Club section
     embed.add_field(
-        name=f"Club: {club_name}",
+        name=f"🥕 Club: {club_name}",
         value=""
     )
 
