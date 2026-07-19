@@ -5,6 +5,7 @@ import source_data_api
 import member_manager
 import fan_counter
 
+from fastapi.responses import FileResponse
 from member_manager import Member 
 from dotenv import load_dotenv
 from fastapi import Depends, Header, HTTPException
@@ -122,6 +123,15 @@ def update_member(member_id: str, member: Member, _=Depends(require_admin)):
     member_manager.add_or_update_member(member_id, **update_fields)
     member_manager.save_members_data()
     return {"message": "Member updated successfully", "member": member}
+
+@app.get("/csv/{yyyymm}")
+def get_csv_fan_data(yyyymm: str):
+    fan_counter.transform_json_to_csv(f"../data/fan/{yyyymm}.json")
+    return FileResponse(
+        path=f"../data/fan/{yyyymm}.csv", 
+        filename=f"{yyyymm}.csv", 
+        media_type="text/csv"
+    )
 
 @app.get("/fan_data")
 def get_all_fan_data():
