@@ -64,7 +64,9 @@ def auto_load_fan_data():
     # keep only the total of lastest month
     # Daily data is sorted by date
     fan_files = sorted([f for f in os.listdir(_FAN_DATA_DIR) if f.endswith('.json')], reverse=True)[:2]
-    lastest_file = fan_files[0]
+    lastest_file = fan_files[0] if fan_files else None
+    if not lastest_file:
+        return
     previous_file = fan_files[1] if len(fan_files) > 1 else None
     with open(os.path.join(_FAN_DATA_DIR, lastest_file), 'r') as f:
         fan_data = json.load(f)
@@ -154,8 +156,6 @@ def transform_json_to_csv(json_file_path, output_csv_path = None):
         writer.writeheader()
         writer.writerows(csv_rows)
         
-    print(f"Data successfully transformed and saved to {output_csv_path}")
-
 if __name__ == "__main__":
     # Example usage: Load from a raw club profile JSON file and save to fan data
     club_profile_path = "../data/club_profile.json"  # Path to the raw club profile JSON file

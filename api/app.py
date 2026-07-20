@@ -124,8 +124,11 @@ def update_member(member_id: str, member: Member, _=Depends(require_admin)):
     member_manager.save_members_data()
     return {"message": "Member updated successfully", "member": member}
 
-@app.get("/csv/{yyyymm}")
-def get_csv_fan_data(yyyymm: str):
+@app.get("/csv")
+def get_csv_fan_data(yyyymm: str = None):
+    if not yyyymm:
+        fan_file = sorted([f for f in os.listdir("../data/fan") if f.endswith('.json')], reverse=True)[0]
+        yyyymm = fan_file[-11:-5]
     fan_counter.transform_json_to_csv(f"../data/fan/{yyyymm}.json")
     return FileResponse(
         path=f"../data/fan/{yyyymm}.csv", 
