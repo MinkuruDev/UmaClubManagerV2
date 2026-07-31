@@ -7,3 +7,5 @@ cloakbrowser
 fastapi
 fastapi[standard]
 discord.py
+pandas
+matplotlib

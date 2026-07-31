@@ -5,11 +5,13 @@ import source_data_api
 import member_manager
 import fan_counter
 
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
+from fastapi import Request
 from member_manager import Member 
 from dotenv import load_dotenv
 from fastapi import Depends, Header, HTTPException
 from typing import Annotated
+from chart_service import CHART_MAPPING
 
 load_dotenv()
 app = fastapi.FastAPI()
@@ -141,16 +143,31 @@ def get_all_fan_data():
     return fan_counter.fan_data
 
 @app.get("/fan_data/{ingame_id}")
-def get_fan_data(ingame_id: str):
+def get_fan_data(ingame_id: str, limit: int = 30):
     if ingame_id not in fan_counter.fan_data:
         raise HTTPException(status_code=404, detail="Fan data not found")
     # Return the latest 30 days of fan data and monthly fan count of that ingame_id
     return {
-        "fan_data": fan_counter.fan_data[ingame_id][:30] \
+        "fan_data": fan_counter.fan_data[ingame_id][:limit] \
             if isinstance(fan_counter.fan_data[ingame_id], list) \
             else fan_counter.fan_data[ingame_id],
         "monthly_fans": fan_counter.fan_data["total"].get(ingame_id, 0)
     }
+
+@app.get("/chart/{chart_type}")
+def get_chart(chart_type: str, request: Request):
+    query_kwargs = dict(request.query_params)
+    for key in query_kwargs.keys():
+        if "," in query_kwargs[key]:
+            arr = query_kwargs[key].split(",")
+            query_kwargs[key] = arr
+    if chart_type not in CHART_MAPPING:
+        raise HTTPException(status_code=404, detail=f"Chart type not found: {chart_type}")
+
+    return Response(
+        CHART_MAPPING[chart_type](**query_kwargs),
+        media_type="image/png"
+    )
 
 if __name__ == "__main__":
     print(len(ADMIN_TOKEN))
