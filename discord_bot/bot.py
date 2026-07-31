@@ -2,6 +2,7 @@ import discord
 import os
 import aiohttp 
 import requests
+import io
 
 from discord import app_commands
 from dotenv import load_dotenv
@@ -304,5 +305,74 @@ async def profile(ctx: discord.Interaction):
 
     await ctx.followup.send(embed=embed)
 
+@tree.command(name="club_ranking_chart", description="Show club ranking chart in this month")
+async def club_ranking_chart(ctx: discord.Interaction):
+    await ctx.response.defer()
+    response = api_session.get(f"{api_url}/chart/club_ranking")
+    image_stream = io.BytesIO(response.content)
+    image_file = discord.File(fp=image_stream, filename="club_ranking.png")
+    await ctx.followup.send(file=image_file)
+
+@tree.command(name="club_daily_fan_gain_chart", description="Show club daily fan gain chart in last 30 days")
+async def club_daily_fan(ctx: discord.Interaction):
+    await ctx.response.defer()
+    response = api_session.get(f"{api_url}/chart/club_daily_fan_gain")
+    image_stream = io.BytesIO(response.content)
+    image_file = discord.File(fp=image_stream, filename="club_daily_fan_gain.png")
+    await ctx.followup.send(file=image_file)
+    
+@tree.command(name="member_monthy_gain_chart", description="Show all member total fan gain in this month")
+async def club_daily_fan(ctx: discord.Interaction):
+    await ctx.response.defer()
+    response = api_session.get(f"{api_url}/chart/member_monthly_fan_gain")
+    image_stream = io.BytesIO(response.content)
+    image_file = discord.File(fp=image_stream, filename="member_monthly_fan_gain.png")
+    await ctx.followup.send(file=image_file)
+
+@tree.command(name="member_daily_gain", description="Show daily fan gain of last 30 days with other member")
+@app_commands.describe(
+    mem1 = "Other member to compare with, up to 4 other members",
+    mem2 = "Other member to compare with, up to 4 other members",
+    mem3 = "Other member to compare with, up to 4 other members",
+    mem4 = "Other member to compare with, up to 4 other members"
+)
+async def member_daily_gain(
+    ctx: discord.Interaction,
+    mem1: discord.Member = None,
+    mem2: discord.Member = None,
+    mem3: discord.Member = None,
+    mem4: discord.Member = None
+):
+    await ctx.response.defer()
+    selected_member = [mem for mem in [mem1, mem2, mem3, mem4] if mem is not None]
+    selected_member.append(ctx.user)
+    ids = ",".join([str(member.id) for member in selected_member])
+    response = api_session.get(f"{api_url}/chart/member_daily_fan_gain?members={ids}")
+    image_stream = io.BytesIO(response.content)
+    image_file = discord.File(fp=image_stream, filename="member_daily_fan_gain.png")
+    await ctx.followup.send(file=image_file)
+
+@tree.command(name="member_cumulative_gain", description="Show cumulative fan gain this month with other member")
+@app_commands.describe(
+    mem1 = "Other member to compare with, up to 4 other members",
+    mem2 = "Other member to compare with, up to 4 other members",
+    mem3 = "Other member to compare with, up to 4 other members",
+    mem4 = "Other member to compare with, up to 4 other members"
+)
+async def member_cumulative_gain(
+    ctx: discord.Interaction,
+    mem1: discord.Member = None,
+    mem2: discord.Member = None,
+    mem3: discord.Member = None,
+    mem4: discord.Member = None
+):
+    await ctx.response.defer()
+    selected_member = [mem for mem in [mem1, mem2, mem3, mem4] if mem is not None]
+    selected_member.append(ctx.user)
+    ids = ",".join([str(member.id) for member in selected_member])
+    response = api_session.get(f"{api_url}/chart/member_cumulative_fan_gain?members={ids}")
+    image_stream = io.BytesIO(response.content)
+    image_file = discord.File(fp=image_stream, filename="member_cumulative_fan_gain.png")
+    await ctx.followup.send(file=image_file)
 
 client.run(TOKEN)

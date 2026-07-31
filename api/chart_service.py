@@ -17,9 +17,10 @@ def to_png_byte() -> bytes:
     return image_bytes
 
 def club_ranking(**_):
-    data = api.get_fan_data("club_ranking")["fan_data"]
+    data = api.get_fan_data("club_ranking", 69)["fan_data"]
     df = pd.DataFrame(data)
     df["date"] = pd.to_datetime(df["date"])
+    club_name = api.get_raw_data("club,0,name")
 
     if not df.empty:
         latest_period = df["date"].max().to_period("M")
@@ -30,7 +31,7 @@ def club_ranking(**_):
         y="rank",
         kind="line",
         figsize=(10, 7),
-        title="Club Ranking"
+        title=f"Club Ranking: {club_name}"
     )
     plt.gca().invert_yaxis()
     return to_png_byte()
@@ -39,12 +40,14 @@ def club_daily_fan_gain(**_):
     data = api.get_fan_data("club_ranking")["fan_data"]
     df = pd.DataFrame(data)
     df["date"] = pd.to_datetime(df["date"])
+    club_name = api.get_raw_data("club,0,name")
+    
     df.plot(
         x="date",
         y="fan",
         kind="line",
         figsize=(10, 7),
-        title="Daily Fan Gain"
+        title=f"{club_name} Daily Fan Gain"
     )
 
     plt.gca().yaxis.set_major_formatter(
@@ -158,16 +161,18 @@ def _get_member_fan_dataframe(kwargs):
 
 def member_daily_fan_gain(**kwargs):
     df = _get_member_fan_dataframe(kwargs)
+    club_name = api.get_raw_data("club,0,name")
+
     if df is None or df.empty:
         plt.figure(figsize=(10, 5))
-        plt.title("Member Daily Fan Gain")
+        plt.title(f"{club_name} Member Daily Fan Gain")
         plt.tight_layout()
         return to_png_byte()
 
     df.plot(
         kind="line",
         figsize=(10, 5),
-        title="Member Daily Fan Gain"
+        title=f"{club_name} Member Daily Fan Gain"
     )
     plt.gca().yaxis.set_major_formatter(
         FuncFormatter(fan_formatter)
@@ -178,9 +183,11 @@ def member_daily_fan_gain(**kwargs):
 
 def member_cumulative_fan_gain(**kwargs):
     df = _get_member_fan_dataframe(kwargs)
+    club_name = api.get_raw_data("club,0,name")
+    
     if df is None or df.empty:
         plt.figure(figsize=(10, 7))
-        plt.title("Member Cumulative Fan Count")
+        plt.title(f"{club_name} Member Cumulative Fan Count")
         plt.tight_layout()
         return to_png_byte()
 
@@ -192,7 +199,7 @@ def member_cumulative_fan_gain(**kwargs):
     df_cum.plot(
         kind="line",
         figsize=(10, 7),
-        title="Member Cumulative Fan Count"
+        title=f"{club_name} Member Cumulative Fan Count"
     )
     plt.gca().yaxis.set_major_formatter(
         FuncFormatter(fan_formatter)
@@ -204,6 +211,7 @@ def member_cumulative_fan_gain(**kwargs):
 def member_monthly_fan_gain(**_):
     members_data = api.get_members()
     total_dict = api.get_fan_data("total")["fan_data"]
+    club_name = api.get_raw_data("club,0,name")
 
     try:
         current_members = api.get_raw_data("club,0,circle_user_array")
@@ -246,7 +254,7 @@ def member_monthly_fan_gain(**_):
     s.plot(
         kind="barh",
         ax=ax,
-        title="Monthly Member Fan Gain"
+        title=f"Monthly Member Fan Gain in {club_name}"
     )
     ax.xaxis.set_major_formatter(
         FuncFormatter(fan_formatter)
