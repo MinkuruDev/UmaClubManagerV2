@@ -86,13 +86,13 @@ async def link_discord(ctx: discord.Interaction, user: discord.User, ingame_id: 
         prompt_text = f"No member found with in-game ID: {ingame_id}. Would you like to link Discord account {user} anyway?"
         member_data = {
             "ingame_id": ingame_id,
-            "ingame_name": None,
+            "ingame_name": "",
             "discord_id": str(user.id),
             "discord_username": str(user)
         }
     elif response.status_code == 200:
         member_data = response.json()
-        ingame_name = member_data.get('ingame_name', None)
+        ingame_name = member_data.get('ingame_name', "")
         prompt_text = f"Member found: {ingame_name}. Would you like to link Discord account {user} to in-game ID {ingame_id}?"
         member_data['discord_id'] = str(user.id)
         member_data['discord_username'] = str(user)
