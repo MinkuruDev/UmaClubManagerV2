@@ -2,6 +2,7 @@ import json
 import os
 import csv
 import member_manager
+import datetime
 
 _FAN_DATA_DIR = "../data/fan"
 os.makedirs(_FAN_DATA_DIR, exist_ok=True)
@@ -10,15 +11,13 @@ def load_from_raw_file(club_profile_path):
     with open(club_profile_path, 'r') as f:
         club_profile = json.load(f)
 
-    monthly_history = club_profile.get('club_monthly_history')
-    previous_year_month = monthly_history[0].get("year_month") 
-    month = previous_year_month % 100
-    year = int(previous_year_month / 100)
-    if month == 12:
-        year += 1
-        month = 1
+    now = datetime.datetime.now()
+    if now.hour < 17:
+        report_day = now - datetime.timedelta(days=2)
     else:
-        month += 1
+        report_day = now - datetime.timedelta(days=1)
+    month = report_day.month
+    year = report_day.year
 
     saving_data = {"total": {}}
     club_daily_history = club_profile.get('club_daily_history', [])
