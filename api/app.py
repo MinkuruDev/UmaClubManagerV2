@@ -5,6 +5,7 @@ import source_data_api
 import member_manager
 import fan_counter
 
+from pathlib import Path
 from fastapi.responses import FileResponse, Response
 from fastapi import Request
 from member_manager import Member 
@@ -129,13 +130,18 @@ def update_member(member_id: str, member: Member, _=Depends(require_admin)):
 @app.get("/csv")
 def get_csv_fan_data(yyyymm: str = None):
     if not yyyymm:
-        fan_file = sorted([f for f in os.listdir("../data/fan") if f.endswith('.json')], reverse=True)[0]
-        yyyymm = fan_file[-11:-5]
-    fan_counter.transform_json_to_csv(f"../data/fan/{yyyymm}.json")
+        fan_dir = Path("../data/fan")
+        latest_json = max(fan_dir.glob("*/*.json"))
+        yyyymm = latest_json.relative_to(fan_dir).with_suffix("").as_posix()
+
+    json_path = Path("../data/fan") / f"{yyyymm}.json"
+    csv_path = json_path.with_suffix(".csv")
+    fan_counter.transform_json_to_csv(str(json_path))
+
     return FileResponse(
-        path=f"../data/fan/{yyyymm}.csv", 
-        filename=f"{yyyymm}.csv", 
-        media_type="text/csv"
+        path=str(csv_path),
+        filename=f"{Path(yyyymm).name}.csv",
+        media_type="text/csv",
     )
 
 @app.get("/fan_data")

@@ -4,6 +4,8 @@ import csv
 import member_manager
 import datetime
 
+from pathlib import Path
+
 _FAN_DATA_DIR = "../data/fan"
 os.makedirs(_FAN_DATA_DIR, exist_ok=True)
 
@@ -51,7 +53,7 @@ def load_from_raw_file(club_profile_path):
         total_history = saving_data["total"].get(ingame_id, 0)
         saving_data["total"][ingame_id] = total_history + daily_fan
 
-    current_year_month = f"{year}{month:02d}"
+    current_year_month = f"{year}/{month:02d}"
     output_file_path = os.path.join(_FAN_DATA_DIR, f"{current_year_month}.json")
     with open(output_file_path, 'w') as f:
         json.dump(saving_data, f, indent=4)
@@ -62,7 +64,10 @@ def auto_load_fan_data():
     # Load 2 latest fan data files
     # keep only the total of lastest month
     # Daily data is sorted by date
-    fan_files = sorted([f for f in os.listdir(_FAN_DATA_DIR) if f.endswith('.json')], reverse=True)[:2]
+    fan_files = sorted((
+        p.relative_to(_FAN_DATA_DIR).as_posix()
+        for p in Path(_FAN_DATA_DIR).glob("*/*.json")
+    ),reverse=True,)[:2]
     lastest_file = fan_files[0] if fan_files else None
     if not lastest_file:
         return
