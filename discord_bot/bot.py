@@ -164,7 +164,7 @@ async def unlink_discord(ctx: discord.Interaction, user: discord.User):
             delete_response = api_session.delete(f"{api_url}/members/discord/{user.id}")
             if delete_response.status_code == 200:
                 await confirm_msg.edit(content="Unlink confirmed.", view=None)
-                await confirm_msg.edit(f"Successfully unlinked {user.mention} from in-game profile **{ingame_name}** (ID: `{ingame_id}`).")
+                await confirm_msg.edit(content=f"Successfully unlinked {user.mention} from in-game profile **{ingame_name}** (ID: `{ingame_id}`).")
             else:
                 await confirm_msg.edit(content=f"Failed to unlink (HTTP {delete_response.status_code}): {delete_response.text}", view=None)
         except Exception as e:

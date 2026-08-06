@@ -4,6 +4,7 @@ import app as api
 import io
 
 from matplotlib.ticker import FuncFormatter
+from datetime import timedelta
 
 def fan_formatter(x, _):
     return f"{x/1_000_000:.0f}M"
@@ -168,6 +169,14 @@ def member_daily_fan_gain(**kwargs):
         plt.title(f"{club_name} Member Daily Fan Gain")
         plt.tight_layout()
         return to_png_byte()
+
+    # Ensure datetime index
+    if not isinstance(df.index, pd.DatetimeIndex):
+        df.index = pd.to_datetime(df.index)
+
+    # Keep only the last 30 days
+    last_date = df.index.max()
+    df = df[df.index >= last_date - timedelta(days=29)]
 
     df.plot(
         kind="line",
