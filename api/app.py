@@ -145,7 +145,9 @@ def get_csv_fan_data(yyyymm: str = None):
     )
 
 @app.get("/fan_data")
-def get_all_fan_data():
+def get_all_fan_data(year: int = None, month: int = None):
+    if year is not None and month is not None:
+        return fan_counter.load_specific_fan_data(year, month)
     return fan_counter.fan_data
 
 @app.get("/fan_data/{ingame_id}")

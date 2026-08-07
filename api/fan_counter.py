@@ -159,6 +159,15 @@ def transform_json_to_csv(json_file_path, output_csv_path = None):
         writer = csv.DictWriter(csv_file, fieldnames=headers)
         writer.writeheader()
         writer.writerows(csv_rows)
+
+def load_specific_fan_data(year: int, month: int):
+    # Construct the file path based on year and month
+    json_file_path = f"../data/fan/{year}/{month:02d}.json"
+    if not os.path.exists(json_file_path):
+        return {}
+    with open(json_file_path) as jf:
+        json_data = json.load(jf)
+    return json_data
         
 if __name__ == "__main__":
     # Example usage: Load from a raw club profile JSON file and save to fan data
