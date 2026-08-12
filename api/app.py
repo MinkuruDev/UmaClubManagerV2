@@ -7,7 +7,7 @@ import fan_counter
 
 from pathlib import Path
 from fastapi.responses import FileResponse, Response
-from fastapi import Request
+from fastapi import Request, Form
 from member_manager import Member 
 from dotenv import load_dotenv
 from fastapi import Depends, Header, HTTPException
@@ -149,6 +149,39 @@ def get_all_fan_data(year: int = None, month: int = None):
     if year is not None and month is not None:
         return fan_counter.load_specific_fan_data(year, month)
     return fan_counter.fan_data
+
+@app.get("/fan_data/requirements/{year}/{month}")
+def get_fan_requirements(year: int, month: int):
+    return fan_counter.get_fan_requirements(year, month)
+
+@app.post("/fan_data/requirements/{year}/{month}")
+def set_fan_requirements(year: int, month: int, from_day: Annotated[int, Form()], to_day: Annotated[int, Form()], req: Annotated[int, Form()], _=Depends(require_admin)):
+    fan_counter.set_fan_requirements(year, month, from_day, to_day, req)
+    return {"message": "Fan requirements set successfully"}
+
+@app.delete("/fan_data/requirements/{year}/{month}")
+def delete_fan_requirements(year: int, month: int, from_day: Annotated[int, Form()], to_day: Annotated[int, Form()], req: Annotated[int, Form()], _=Depends(require_admin)):
+    fan_counter.delete_fan_requirements(year, month, from_day, to_day, req)
+    return {"message": "Fan requirements deleted successfully"}
+
+@app.post("/fan_data/extra_requirements/{year}/{month}")
+def set_extra_fan_requirements(year: int, month: int, ingame_id: Annotated[str, Form()], extra: Annotated[int, Form()], _=Depends(require_admin)):
+    fan_counter.set_extra_fan_requirements(year, month, ingame_id, extra)
+    return {"message": "Extra fan requirements set successfully"}
+
+@app.get("/fan_data/exemptions")
+def get_exemptions():
+    json_file_path = f"../data/exemptions.json"
+    if not os.path.exists(json_file_path):
+        return {}
+    with open(json_file_path) as jf:
+        json_data = json.load(jf)
+    return json_data
+
+@app.post("/fan_data/exemptions")
+def set_exemption(ingame_id: Annotated[str, Form()], reason: Annotated[str, Form()], _=Depends(require_admin)):
+    fan_counter.set_exemption(ingame_id, reason)
+    return {"message": "Exemption set successfully"}
 
 @app.get("/fan_data/{ingame_id}")
 def get_fan_data(ingame_id: str, limit: int = 30):

@@ -168,7 +168,81 @@ def load_specific_fan_data(year: int, month: int):
     with open(json_file_path) as jf:
         json_data = json.load(jf)
     return json_data
-        
+
+def get_fan_requirements(year: int, month: int):
+    json_file_path = f"../data/requirements/{year}.json"
+    if not os.path.exists(json_file_path):
+        return {}
+    with open(json_file_path) as jf:
+        json_data = json.load(jf)
+    
+    return json_data.get(f"{month:02d}", {})
+
+def set_fan_requirements(year: int, month: int, from_day: int, to_day: int, req: int):
+    json_file_path = f"../data/requirements/{year}.json"
+    if os.path.exists(json_file_path):
+        with open(json_file_path) as jf:
+            json_data = json.load(jf)
+    else:
+        json_data = {}
+    
+    if f"{month:02d}" not in json_data:
+        json_data[f"{month:02d}"] = {}
+    if "requirements" not in json_data[f"{month:02d}"]:
+        json_data[f"{month:02d}"]["requirements"] = []
+    
+    json_data[f"{month:02d}"]["requirements"].append({
+        "from": from_day,
+        "to": to_day,
+        "req": req
+    })
+    with open(json_file_path, 'w') as jf:
+        json.dump(json_data, jf, indent=4)
+
+def set_extra_fan_requirements(year: int, month: int, id: str, extra_req: int):
+    json_file_path = f"../data/requirements/{year}.json"
+    if os.path.exists(json_file_path):
+        with open(json_file_path) as jf:
+            json_data = json.load(jf)
+    else:
+        json_data = {}
+    
+    if f"{month:02d}" not in json_data:
+        json_data[f"{month:02d}"] = {}
+    if "extra" not in json_data[f"{month:02d}"]:
+        json_data[f"{month:02d}"]["extra"] = {}
+    
+    json_data[f"{month:02d}"]["extra"][id] = extra_req
+    with open(json_file_path, 'w') as jf:
+        json.dump(json_data, jf, indent=4)
+
+def delete_fan_requirements(year: int, month: int, from_day: int, to_day: int, reqirement: int):
+    json_file_path = f"../data/requirements/{year}.json"
+    if not os.path.exists(json_file_path):
+        return
+    with open(json_file_path) as jf:
+        json_data = json.load(jf)
+    
+    if f"{month:02d}" in json_data and "requirements" in json_data[f"{month:02d}"]:
+        json_data[f"{month:02d}"]["requirements"] = [
+            req for req in json_data[f"{month:02d}"]["requirements"]
+            if not (req["from"] == from_day and req["to"] == to_day and req["req"] == reqirement)
+        ]
+        with open(json_file_path, 'w') as jf:
+            json.dump(json_data, jf, indent=4)
+
+def set_exemption(id: str, reason: str):
+    json_file_path = f"../data/exemptions.json"
+    if os.path.exists(json_file_path):
+        with open(json_file_path) as jf:
+            json_data = json.load(jf)
+    else:
+        json_data = {}
+    
+    json_data[id] = reason
+    with open(json_file_path, 'w', encoding='utf-8') as jf:
+        json.dump(json_data, jf, indent=4, ensure_ascii=False)
+
 if __name__ == "__main__":
     # Example usage: Load from a raw club profile JSON file and save to fan data
     club_profile_path = "../data/club_profile.json"  # Path to the raw club profile JSON file
