@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uma Club Manager - Fans</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+    function toggleEditMode(modeClass) {
+        document.querySelectorAll('.table-container').forEach(el => el.classList.toggle(modeClass));
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const viewMonthSelect = document.getElementById("month");
+        const yearInput = document.getElementById("year");
+        const monthInput = document.getElementById("month");
+
+        function updateUploadFields() {
+            const val = viewMonthSelect.value;
+            if (val && val.length === 6) {
+                yearInput.value = val.substring(0, 4);
+                monthInput.value = val.substring(4, 6);
+            }
+        }
+
+        // Only needed on load since the select auto-submits on change.
+        updateUploadFields();
+    });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <nav class="top-nav">
+            <a href="/">Members</a>
+            <a href="/fans" class="active">Fan Progress</a>
+        </nav>
+
+        <header>
+            <h1>Fan Progress</h1>
+            <p>Track members' fan accumulation</p>
+        </header>
+
+        <section class="form-section glass-panel">
+            <h2>Select Year and Month Data</h2>
+            <div class="fan-controls">
+                <form action="/fans" method="GET" class="inline-form">
+                    <div class="input-group">
+                        <label for="year">Year</label>
+                        <select id="year" name="year" onchange="if(this.value && this.form.month.value) this.form.submit()">
+                            <option value="">-- Select Year --</option>
+                            {% for y in range(2025, 2036) %}
+                            <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                        
+                    </div>
+                    <div class="input-group">
+                        <label for="month">Month</label>
+                        <select id="month" name="month" onchange="if(this.value && this.form.year.value) this.form.submit()">
+                            <option value="">-- Select Month --</option>
+                            {% for m in range(1, 13) %}
+                            <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ m }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        {% if selected_month and selected_year %}
+        <section class="requirements-section glass-panel" style="margin-bottom: 2rem;">
+            <h2>Fan Requirements Configuration</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Day Start</th>
+                            <th>Day End</th>
+                            <th>Daily Fan Requirement</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in reqs %}
+                        <tr>
+                            <td>Day {{ req.from }}</td>
+                            <td>Day {{ req.to }}</td>
+                            <td>{{ "{:,}".format(req.req) }}</td>
+                            <td>
+                                <form action="/delete_requirement" method="POST" style="display:inline;">
+                                    <input type="hidden" name="year" value="{{ selected_year }}">
+                                    <input type="hidden" name="month" value="{{ selected_month }}">
+                                    <input type="hidden" name="from_day" value="{{ req.from }}">
+                                    <input type="hidden" name="to_day" value="{{ req.to }}">
+                                    <input type="hidden" name="req" value="{{ req.req }}">
+
+                                    <button type="submit" class="delete-btn">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="empty-state">No active requirements configured for this month.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <form action="/add_requirement" method="POST" class="add-form" style="margin-top: 1.5rem;">
+                <input type="hidden" name="month" value="{{ selected_month }}">
+                <input type="hidden" name="year" value="{{ selected_year }}">
+                <div class="input-group">
+                    <label for="day_start">Day Start</label>
+                    <input type="number" id="day_start" name="day_start" required placeholder="e.g. 1" min="1" max="31">
+                </div>
+                <div class="input-group">
+                    <label for="day_end">Day End</label>
+                    <input type="number" id="day_end" name="day_end" required placeholder="e.g. 15" min="1" max="31">
+                </div>
+                <div class="input-group">
+                    <label for="daily_fan">Daily Fan Requirement</label>
+                    <input type="number" id="daily_fan" name="daily_fan" required placeholder="e.g. 1000000">
+                </div>
+                <button type="submit" class="submit-btn">Add</button>
+            </form>
+        </section>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-messages">
+              {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+              {% endfor %}
+              <!-- Auto-hide flash messages after 10 seconds -->
+                <script>
+                    setTimeout(() => {
+                        const flashMessages = document.querySelectorAll('.flash-message');
+                        flashMessages.forEach(msg => msg.style.display = 'none');
+                    }, 10000);
+                </script>
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <section class="list-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0;">Tracking Data up to Day {{ latest_day }}</h2>
+                {% if fan_rows %}
+                <form action="/send_discord" method="POST" style="margin: 0;">
+                    <input type="hidden" name="month" value="{{ selected_month }}">
+                    <input type="hidden" name="year" value="{{ selected_year }}">
+                    <input type="hidden" name="fan_rows_json" value='{{ fan_rows | tojson }}'>
+                    <input type="hidden" name="latest_day" value='{{ latest_day }}'>
+                    <button type="submit" class="submit-btn" style="background: #5865F2; width: auto; font-size: 0.9rem;">Send Report to Discord</button>
+                </form>
+                {% endif %}
+            </div>
+            <div class="table-container glass-panel">
+                {% if fan_rows %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>In-Game Name</th>
+                            <th>Day {{ latest_day }}</th>
+                            <th>Monthly Total</th>
+                            <th>Expected</th>
+                            <th>Extra<button type="button" onclick="toggleEditMode('edit-extra-mode')" style="background: transparent; border: none; cursor: pointer; filter: grayscale(1);">✏️</button></th>
+                            <th>Status</th>
+                            <th>Exemption <button type="button" onclick="toggleEditMode('edit-exempt-mode')" style="background: transparent; border: none; cursor: pointer; filter: grayscale(1);">✏️</button></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in fan_rows %}
+                        <tr class="row-{{ row.status }}">
+                            <td>{{ row.name }}</td>
+                            <td>{{ "{:,}".format(row.latest_day) }}</td>
+                            <td>{{ "{:,}".format(row.fan) }}</td>
+                            <td>{{ "{:,}".format(row.expected) }}</td>
+                            <td>
+                                <span class="extra-text-view">{{ "{:,}".format(row.extra) if row.extra else '-' }}</span>
+                                <form class="extra-form-view" action="/set_extra" method="POST" style="gap: 0.5rem; justify-content: center; align-items: center;">
+                                    <input type="hidden" name="month" value="{{ selected_month }}">
+                                    <input type="hidden" name="year" value="{{ selected_year }}">
+                                    <input type="hidden" name="ingame_id" value="{{ row.ingame_id }}">
+                                    <input type="text" inputmode="numeric" pattern="[0-9]*" name="extra" value="{{ row.extra if row.extra != 0 else '' }}" placeholder="0" style="padding: 0.2rem 0.5rem; width: 80px; font-size: 0.8rem;">
+                                    <button type="submit" class="submit-btn" style="padding: 0.2rem 0.5rem; width: auto; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.2);">Save</button>
+                                </form>
+                            </td>
+                            <td style="text-transform: capitalize;">{{ row.status }}</td>
+                            <td>
+                                <span class="exempt-text-view">
+                                    {% if row.exempt %}
+                                        <span style="font-size: 0.8rem; color: #f472b6; font-weight: 600;">Exempt: {{ row.exempt }}</span>
+                                    {% else %}
+                                        <span style="color: var(--text-muted);">-</span>
+                                    {% endif %}
+                                </span>
+                                <div class="exempt-form-view">
+                                    {% if row.exempt %}
+                                        <span style="font-size: 0.8rem; color: #f472b6; font-weight: 600;">Exempt: {{ row.exempt }}</span>
+                                        <form action="/set_exemption" method="POST" style="display:inline;">
+                                            <input type="hidden" name="month" value="{{ selected_month }}">
+                                            <input type="hidden" name="year" value="{{ selected_year }}">
+                                            <input type="hidden" name="ingame_id" value="{{ row.ingame_id }}">
+                                            <input type="hidden" name="reason" value="">
+                                            <button type="submit" class="delete-btn" style="padding: 0.2rem 0.5rem; margin-left: 0.5rem;">Clear</button>
+                                        </form>
+                                    {% elif row.status == 'awful' or row.status == 'bad' %}
+                                        <form action="/set_exemption" method="POST" style="display: flex; gap: 0.5rem; justify-content: center;">
+                                            <input type="hidden" name="month" value="{{ selected_month }}">
+                                            <input type="hidden" name="year" value="{{ selected_year }}">
+                                            <input type="hidden" name="ingame_id" value="{{ row.ingame_id }}">
+                                            <input type="text" name="reason" placeholder="Reason..." required style="padding: 0.2rem 0.5rem; width: 120px; font-size: 0.8rem;">
+                                            <button type="submit" class="submit-btn" style="padding: 0.2rem 0.5rem; width: auto; font-size: 0.8rem;">Exempt</button>
+                                        </form>
+                                    {% else %}
+                                        <span style="color: var(--text-muted);">-</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="empty-state">No data or empty file.</p>
+                {% endif %}
+            </div>
+        </section>
+        {% endif %}
+    </div>
+</body>
+</html>

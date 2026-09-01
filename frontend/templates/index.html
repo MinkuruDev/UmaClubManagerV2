@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uma Club Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <nav class="top-nav">
+            <a href="/" class="active">Members</a>
+            <a href="/fans">Fan Progress</a>
+        </nav>
+        <header>
+            <h1>Uma Club Manager</h1>
+        </header>
+
+        <section class="form-section glass-panel">
+            <h2>Add New Member</h2>
+            <form action="/add" method="POST" class="add-form">
+                <div class="input-group">
+                    <label for="ingame_id">In-Game ID</label>
+                    <input type="text" id="ingame_id" name="ingame_id" required placeholder="e.g. 123456789">
+                </div>
+                <div class="input-group">
+                    <label for="ingame_name">In-Game Name</label>
+                    <input type="text" id="ingame_name" name="ingame_name" required placeholder="e.g. GoldShip">
+                </div>
+                <div class="input-group">
+                    <label for="discord_id">Discord ID</label>
+                    <input type="text" id="discord_id" name="discord_id" placeholder="e.g. 123456789012345678">
+                </div>
+                <div class="input-group">
+                    <label for="discord_username">Discord Username</label>
+                    <input type="text" id="discord_username" name="discord_username" placeholder="e.g. goldship#1234">
+                </div>
+                <button type="submit" class="submit-btn">Add Member</button>
+            </form>
+        </section>
+
+        <!-- Search Section -->
+        <section class="search-section glass-panel">
+            <div class="input-group">
+                <label for="member-search">Search Members</label>
+                <input type="text" id="member-search" placeholder="Type to search by In-Game Name, ID, or Discord details..." onkeyup="searchMembers()">
+            </div>
+        </section>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-messages">
+              {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+              {% endfor %}
+              <!-- Auto-hide flash messages after 10 seconds -->
+                <script>
+                    setTimeout(() => {
+                        const flashMessages = document.querySelectorAll('.flash-message');
+                        flashMessages.forEach(msg => msg.style.display = 'none');
+                    }, 10000);
+                </script>
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <!-- Linked Members Section -->
+        <section class="list-section">
+            <h2>Linked Discord Accounts ({{ linked_members|length }} Members)</h2>
+            <div class="table-container glass-panel">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>In-Game ID</th>
+                            <th>In-Game Name</th>
+                            <th>Discord ID</th>
+                            <th>Discord Username</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in linked_members %}
+                        <tr>
+                            <td>{{ member.ingame_id }}</td>
+                            <td class="name-cell">{{ member.ingame_name }}</td>
+                            <td>{{ member.discord_id }}</td>
+                            <td>{{ member.discord_username }}</td>
+                            <td class="action-buttons">
+                                <button type="button" class="edit-btn" onclick="openEditModal('{{ member.ingame_id }}', '{{ member.ingame_name }}', '{{ member.discord_id }}', '{{ member.discord_username }}')">Edit</button>
+                                <form action="/delete/{{ member.discord_id }}" method="POST" style="display:inline;">
+                                    <button type="submit" class="delete-btn" onclick="return confirm(`Are you sure you want to unlink {{ member.discord_username }}?`)">Unlink</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr class="empty-state-row">
+                            <td colspan="5" class="empty-state">No linked members found.</td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="no-results-row" style="display: none;">
+                            <td colspan="5" class="empty-state">No matching members found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Unlinked Members Section -->
+        <section class="list-section">
+            <h2>Unlinked Members ({{ unlinked_members|length }} Members)</h2>
+            <div class="table-container glass-panel">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>In-Game ID</th>
+                            <th>In-Game Name</th>
+                            <th>Discord ID</th>
+                            <th>Discord Username</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in unlinked_members %}
+                        <tr>
+                            <td>{{ member.ingame_id }}</td>
+                            <td class="name-cell">{{ member.ingame_name }}</td>
+                            <td><span style="color: var(--text-muted); font-style: italic;">unlinked</span></td>
+                            <td><span style="color: var(--text-muted); font-style: italic;">unlinked</span></td>
+                            <td class="action-buttons">
+                                <button type="button" class="edit-btn" onclick="openEditModal('{{ member.ingame_id }}', '{{ member.ingame_name }}', '{{ member.discord_id }}', '{{ member.discord_username }}')">Edit</button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr class="empty-state-row">
+                            <td colspan="5" class="empty-state">All members have Discord accounts linked!</td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="no-results-row" style="display: none;">
+                            <td colspan="5" class="empty-state">No matching members found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- Edit Modal Dialog -->
+    <div id="editModal" class="modal">
+        <div class="modal-content glass-panel">
+            <span class="close-btn" onclick="closeEditModal()">&times;</span>
+            <h2>Edit Member Details</h2>
+            <form id="editForm" action="" method="POST" class="add-form" style="grid-template-columns: 1fr;">
+                <div class="input-group">
+                    <label for="edit_display_id">In-Game ID (Read-only)</label>
+                    <input type="text" id="edit_display_id" disabled style="opacity: 0.6; cursor: not-allowed;">
+                </div>
+                <div class="input-group">
+                    <label for="edit_ingame_name">In-Game Name</label>
+                    <input type="text" id="edit_ingame_name" name="ingame_name" required placeholder="e.g. GoldShip">
+                </div>
+                <div class="input-group">
+                    <label for="edit_discord_id">Discord ID</label>
+                    <input type="text" id="edit_discord_id" name="discord_id" placeholder="e.g. 123456789012345678">
+                </div>
+                <div class="input-group">
+                    <label for="edit_discord_username">Discord Username</label>
+                    <input type="text" id="edit_discord_username" name="discord_username" placeholder="e.g. goldship#1234">
+                </div>
+                <button type="submit" class="submit-btn" style="margin-top: 1rem;">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function searchMembers() {
+            const query = document.getElementById('member-search').value.toLowerCase();
+            const tables = document.querySelectorAll('table');
+            
+            tables.forEach(table => {
+                const rows = table.querySelectorAll('tbody tr');
+                let visibleCount = 0;
+                
+                rows.forEach(row => {
+                    // Skip special empty and no-results rows
+                    if (row.classList.contains('empty-state-row') || row.classList.contains('no-results-row')) {
+                        row.style.display = 'none';
+                        return;
+                    }
+                    
+                    const cells = row.querySelectorAll('td');
+                    let match = false;
+                    cells.forEach((cell, idx) => {
+                        // Skip the actions column
+                        if (idx < 4 && cell.textContent.toLowerCase().includes(query)) {
+                            match = true;
+                        }
+                    });
+                    
+                    if (match) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                // Toggle 'no results' row
+                const noResultsRow = table.querySelector('.no-results-row');
+                const emptyStateRow = table.querySelector('.empty-state-row');
+                
+                if (visibleCount === 0) {
+                    if (query !== '') {
+                        if (noResultsRow) noResultsRow.style.display = '';
+                    } else {
+                        if (emptyStateRow) emptyStateRow.style.display = '';
+                    }
+                }
+            });
+        }
+
+        function openEditModal(ingame_id, ingame_name, discord_id, discord_username) {
+            document.getElementById('edit_display_id').value = ingame_id;
+            document.getElementById('edit_ingame_name').value = ingame_name;
+            document.getElementById('edit_discord_id').value = discord_id === 'None' ? '' : discord_id;
+            document.getElementById('edit_discord_username').value = discord_username === 'None' ? '' : discord_username;
+            
+            // Set action dynamically
+            document.getElementById('editForm').action = '/edit/' + ingame_id;
+            
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target === modal) {
+                closeEditModal();
+            }
+        }
+    </script>
+</body>
+</html>
