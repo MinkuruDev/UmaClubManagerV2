@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import fastapi
@@ -10,9 +11,11 @@ from fastapi.responses import FileResponse, Response
 from fastapi import Request, Form
 from member_manager import Member 
 from dotenv import load_dotenv
-from fastapi import Depends, Header, HTTPException
+from fastapi import Depends, Header, HTTPException, BackgroundTasks
 from typing import Annotated
 from chart_service import CHART_MAPPING
+from discord_webhook import send_fan_report, send_image
+from screenshoot import take_screenshot
 
 load_dotenv()
 app = fastapi.FastAPI()
@@ -32,6 +35,17 @@ def load_raw_data():
     with open(path) as f:
         raw_data = json.load(f)
 load_raw_data()
+
+def latest_game_date():
+    now = datetime.datetime.now()
+    if now.hour < 17:
+        report_day = now - datetime.timedelta(days=2)
+    else:
+        report_day = now - datetime.timedelta(days=1)
+    month = report_day.month
+    year = report_day.year
+    day = report_day.day
+    return year, month, day
     
 @app.get("/")
 def read_root():
@@ -171,17 +185,32 @@ def set_extra_fan_requirements(year: int, month: int, ingame_id: Annotated[str, 
 
 @app.get("/fan_data/exemptions")
 def get_exemptions():
-    json_file_path = f"../data/exemptions.json"
-    if not os.path.exists(json_file_path):
-        return {}
-    with open(json_file_path) as jf:
-        json_data = json.load(jf)
-    return json_data
+    return fan_counter.get_exemptions()
 
 @app.post("/fan_data/exemptions")
 def set_exemption(ingame_id: Annotated[str, Form()], reason: Annotated[str, Form()], _=Depends(require_admin)):
     fan_counter.set_exemption(ingame_id, reason)
     return {"message": "Exemption set successfully"}
+
+@app.get("/fan_data/processed")
+def get_processed_fan_data(year: int = None, month: int = None):
+    if year is None or month is None:
+        year, month, _ = latest_game_date()
+    return fan_counter.process_fan_data(year, month)
+
+@app.post("/fan_data/report_discord")
+def report_fan_data_to_discord(background_tasks: BackgroundTasks, year: int = None, month: int = None, _=Depends(require_admin)):
+    if year is None or month is None:
+        year, month, _ = latest_game_date()
+    async def send_report():
+        _, latest_day, fan_rows = fan_counter.process_fan_data(year, month)
+        webhook_url = os.environ.get("DISCORD_WEBHOOK")
+        send_fan_report(fan_rows, webhook_url, year, month, latest_day)
+        screenshot_path = await take_screenshot(year, month)
+        if screenshot_path:
+            send_image(screenshot_path, webhook_url)
+    background_tasks.add_task(send_report)
+    return {"message": "Fan report is scheduled to be sent to Discord"}
 
 @app.get("/fan_data/{ingame_id}")
 def get_fan_data(ingame_id: str, limit: int = 30):

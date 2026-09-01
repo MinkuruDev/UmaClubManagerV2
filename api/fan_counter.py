@@ -1,13 +1,144 @@
 import json
 import os
 import csv
+import calendar
 import member_manager
 import datetime
 
 from pathlib import Path
 
 _FAN_DATA_DIR = "../data/fan"
+_EXEMPTIONS_PATH = "../data/exemptions.json"
 os.makedirs(_FAN_DATA_DIR, exist_ok=True)
+
+def process_fan_data(year: int, month: int):
+    """
+    Compute fan status for a given year/month using JSON data files.
+    Returns (reqs, latest_day, fan_rows).
+
+    Data sources:
+      - members:      ../data/members_profile.json  (via member_manager)
+      - exemptions:   ../data/exemptions.json       (via get_exemptions)
+      - requirements: ../data/requirements/{year}.json  (via get_fan_requirements)
+      - fan data:     ../data/fan/{year}/{month:02d}.json (via load_specific_fan_data)
+    """
+    days_in_month = calendar.monthrange(year, month)[1]
+
+    exemptions_dict = get_exemptions()
+
+    month_data = get_fan_requirements(year, month)
+    reqs = month_data.get("requirements", [])
+    extras_dict = month_data.get("extra", {})
+
+    # Build daily quota map: day -> required fan
+    daily_quota_map = {}
+    for req in reqs:
+        for d in range(req["from"], req["to"] + 1):
+            daily_quota_map[d] = req["req"]
+
+    # --- Load fan data from JSON API file ---
+    fan_json = load_specific_fan_data(year, month)
+    if not fan_json:
+        return reqs, 0, []
+
+    totals = fan_json.get("total", {})
+
+    # --- Determine latest_day (global: max day across all members) ---
+    all_dates = set()
+    for key, records in fan_json.items():
+        if key in ("total", "club_ranking"):
+            continue
+        if isinstance(records, list):
+            for rec in records:
+                all_dates.add(rec["date"])
+    if not all_dates:
+        return reqs, 0, []
+
+    sorted_dates = sorted(all_dates)
+    latest_day = int(sorted_dates[-1].split("-")[-1])
+
+    expected_total = sum(daily_quota_map.get(d, 0) for d in range(1, latest_day + 1))
+    current_daily_req = daily_quota_map.get(latest_day, 0)
+
+    # --- Build fan rows ---
+    member_data = member_manager.members_data
+    raw_rows = []
+
+    for ingame_id, records in fan_json.items():
+        if ingame_id in ("total", "club_ranking"):
+            continue
+        if not isinstance(records, list):
+            continue
+        if int(ingame_id) not in member_data["current_member"]:
+            continue
+
+        m_data = member_data.get(ingame_id, {})
+        name = m_data.get("ingame_name", ingame_id)
+        discord_id = m_data.get("discord_id")
+
+        # Accumulate fan total for this member from daily gains
+        fan_val = totals.get(ingame_id, 0)
+
+        # Find member's latest day gain
+        member_latest_gain = sorted(records, key=lambda x: x["date"], reverse=True)[0]["fan"] if records else 0
+
+        raw_rows.append({
+            "ingame_id": ingame_id,
+            "name": name,
+            "discord_id": discord_id,
+            "fan": fan_val,
+            "expected": expected_total,
+            "current_daily_req": current_daily_req,
+            "exempt": exemptions_dict.get(ingame_id),
+            "latest_day": member_latest_gain,
+        })
+
+    for row in raw_rows:
+        fan = row["fan"]
+        base_expected = row["expected"]
+        base_req_day = row["current_daily_req"]
+        ingame_id = row["ingame_id"]
+
+        extra = extras_dict.get(ingame_id, 0)
+
+        if extra > 0:
+            effective_expected = round(base_expected + (extra / float(days_in_month)) * latest_day)
+            effective_req_day = base_req_day + (extra / float(days_in_month))
+        else:
+            effective_expected = max(0, base_expected + extra)
+            effective_req_day = base_req_day
+
+        deficit = effective_expected - fan
+        status = "normal"
+
+        if extra > 0:
+            if base_expected > 0 and (fan - extra) >= base_expected * 2:
+                status = "great"
+            elif base_expected > 0 and (fan - extra) >= base_expected * 1.5:
+                status = "good"
+            elif deficit > effective_req_day * 3:
+                status = "awful"
+            elif 0 < deficit <= effective_req_day * 3:
+                status = "bad"
+        else:
+            if base_expected > 0 and fan >= base_expected * 2:
+                status = "great"
+            elif base_expected > 0 and fan >= base_expected * 1.5:
+                status = "good"
+            elif deficit > effective_req_day * 3:
+                status = "awful"
+            elif 0 < deficit <= effective_req_day * 3:
+                status = "bad"
+
+        if latest_day > 25 and status == "bad":
+            status = "awful"
+
+        row["status"] = status
+        row["expected"] = effective_expected
+        row["extra"] = extra
+
+    raw_rows.sort(key=lambda x: x["fan"], reverse=True)
+    return reqs, latest_day, raw_rows
 
 def load_from_raw_file(club_profile_path):
     with open(club_profile_path, 'r') as f:
@@ -230,6 +361,12 @@ def delete_fan_requirements(year: int, month: int, from_day: int, to_day: int, r
         ]
         with open(json_file_path, 'w') as jf:
             json.dump(json_data, jf, indent=4)
+
+def get_exemptions():
+    if not os.path.exists(_EXEMPTIONS_PATH):
+        return {}
+    with open(_EXEMPTIONS_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 def set_exemption(id: str, reason: str):
     json_file_path = f"../data/exemptions.json"
