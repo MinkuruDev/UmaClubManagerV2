@@ -208,6 +208,21 @@ async def update_username(ctx: discord.Interaction):
 
     await ctx.followup.send(f"Updated Discord usernames for {updated_count} members.", ephemeral=True)
 
+@tree.command(name="send_fan_report", description="Send fan report to Discord channel")
+async def send_fan_report(ctx: discord.Interaction):
+    await ctx.response.defer(ephemeral=True)
+    if not is_leader(str(ctx.user.id)):
+        await ctx.followup.send("You are not authorized to send fan reports. Only leaders can perform this action.", ephemeral=True)
+        return
+    try:
+        response = api_session.post(f"{api_url}/fan_data/report_discord")
+        if response.status_code == 200:
+            await ctx.followup.send("Fan report scheduled to be sent.", ephemeral=True)
+        else:
+            await ctx.followup.send(f"Failed to send fan report (HTTP {response.status_code}): {response.text}", ephemeral=True)
+    except Exception as e:
+        await ctx.followup.send(f"Error sending fan report: {e}", ephemeral=True)
+
 @tree.command(name="profile", description="View profile and fan progress")
 async def profile(ctx: discord.Interaction):
     await ctx.response.defer()
