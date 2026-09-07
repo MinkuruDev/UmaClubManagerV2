@@ -186,7 +186,7 @@
                                     <input type="hidden" name="month" value="{{ selected_month }}">
                                     <input type="hidden" name="year" value="{{ selected_year }}">
                                     <input type="hidden" name="ingame_id" value="{{ row.ingame_id }}">
-                                    <input type="text" inputmode="numeric" pattern="[0-9]*" name="extra" value="{{ row.extra if row.extra != 0 else '' }}" placeholder="0" style="padding: 0.2rem 0.5rem; width: 80px; font-size: 0.8rem;">
+                                    <input type="text" inputmode="numeric" pattern="-?[0-9]*" name="extra" value="{{ row.extra if row.extra != 0 else '' }}" placeholder="0" style="padding: 0.2rem 0.5rem; width: 80px; font-size: 0.8rem;">
                                     <button type="submit" class="submit-btn" style="padding: 0.2rem 0.5rem; width: auto; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.2);">Save</button>
                                 </form>
                             </td>
