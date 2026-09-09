@@ -40,17 +40,23 @@
 
         <header>
             <h1>Fan Progress</h1>
-            <p>Track members' fan accumulation</p>
         </header>
 
         <section class="form-section glass-panel">
-            <h2>Select Year and Month Data</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0;">Select Year and Month Data</h2>
+                <form action="/sync_data" method="POST" style="margin: 0;">
+                    <input type="hidden" name="redirect_to" value="fans">
+                    <input type="hidden" name="month" value="{{ selected_month }}">
+                    <input type="hidden" name="year" value="{{ selected_year }}">
+                    <button type="submit" class="submit-btn" style="background: #2563eb; width: auto; font-size: 0.9rem; margin-top: 0;">Sync Data</button>
+                </form>
+            </div>
             <div class="fan-controls">
                 <form action="/fans" method="GET" class="inline-form">
                     <div class="input-group">
                         <label for="year">Year</label>
                         <select id="year" name="year" onchange="if(this.value && this.form.month.value) this.form.submit()">
-                            <option value="">-- Select Year --</option>
                             {% for y in range(2025, 2036) %}
                             <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
                             {% endfor %}
@@ -60,9 +66,9 @@
                     <div class="input-group">
                         <label for="month">Month</label>
                         <select id="month" name="month" onchange="if(this.value && this.form.year.value) this.form.submit()">
-                            <option value="">-- Select Month --</option>
+                            {% set months = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
                             {% for m in range(1, 13) %}
-                            <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ m }}</option>
+                            <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ "%02d"|format(m) }} - {{ months[m] }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -113,17 +119,19 @@
             <form action="/add_requirement" method="POST" class="add-form" style="margin-top: 1.5rem;">
                 <input type="hidden" name="month" value="{{ selected_month }}">
                 <input type="hidden" name="year" value="{{ selected_year }}">
-                <div class="input-group">
-                    <label for="day_start">Day Start</label>
-                    <input type="number" id="day_start" name="day_start" required placeholder="e.g. 1" min="1" max="31">
-                </div>
-                <div class="input-group">
-                    <label for="day_end">Day End</label>
-                    <input type="number" id="day_end" name="day_end" required placeholder="e.g. 15" min="1" max="31">
-                </div>
-                <div class="input-group">
-                    <label for="daily_fan">Daily Fan Requirement</label>
-                    <input type="number" id="daily_fan" name="daily_fan" required placeholder="e.g. 1000000">
+                <div class="grid">
+                    <div class="input-group">
+                        <label for="day_start">Day Start</label>
+                        <input type="number" id="day_start" name="day_start" required placeholder="e.g. 1" min="1" max="31">
+                    </div>
+                    <div class="input-group">
+                        <label for="day_end">Day End</label>
+                        <input type="number" id="day_end" name="day_end" required placeholder="e.g. 15" min="1" max="31">
+                    </div>
+                    <div class="input-group">
+                        <label for="daily_fan">Daily Fan Requirement</label>
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" id="daily_fan" name="daily_fan" required placeholder="e.g. 1000000">
+                    </div>
                 </div>
                 <button type="submit" class="submit-btn">Add</button>
             </form>

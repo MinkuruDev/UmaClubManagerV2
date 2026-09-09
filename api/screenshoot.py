@@ -30,6 +30,8 @@ async def take_screenshot(year: int, month: int) -> Optional[str]:
     except Exception as e:
         print(f"Error taking screenshot: {e}")
         return None
+    finally:
+        await browser.close()
 
 if __name__ == "__main__":
-    take_screenshot(2026, 8)
+    asyncio.run(take_screenshot(2026, 8))

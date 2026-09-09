@@ -38,7 +38,7 @@ def fetch_club_profile() -> Tuple[bool, str]:
             with open("../data/club_profile.json") as f:
                 old_data = json.load(f)
             if get_last_updated_time(data) == get_last_updated_time(old_data):
-                return False, "Data from source is not updated"
+                return False, "Data is already synced"
             os.rename("../data/club_profile.json", "../data/club_profile_old.json")
 
         with open("../data/club_profile.json", "w") as f:

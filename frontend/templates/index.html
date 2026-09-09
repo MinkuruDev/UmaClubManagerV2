@@ -20,25 +20,36 @@
         </header>
 
         <section class="form-section glass-panel">
-            <h2>Add New Member</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin: 0;">Add New Member</h2>
+                <form action="/sync_data" method="POST" style="margin: 0;">
+                    <input type="hidden" name="redirect_to" value="index">
+                    <button type="submit" class="submit-btn" style="background: #2563eb; width: auto; font-size: 0.9rem; margin-top: 0;">Sync Data</button>
+                </form>
+            </div>
             <form action="/add" method="POST" class="add-form">
-                <div class="input-group">
-                    <label for="ingame_id">In-Game ID</label>
-                    <input type="text" id="ingame_id" name="ingame_id" required placeholder="e.g. 123456789">
+                <div class="grid">
+                    <div class="input-group">
+                        <label for="ingame_id">In-Game ID</label>
+                        <input type="text" id="ingame_id" name="ingame_id" required placeholder="e.g. 123456789">
+                    </div>
+                    <div class="input-group">
+                        <label for="ingame_name">In-Game Name</label>
+                        <input type="text" id="ingame_name" name="ingame_name" required placeholder="e.g. GoldShip">
+                    </div>
+                    <div class="input-group">
+                        <label for="discord_id">Discord ID</label>
+                        <input type="text" id="discord_id" name="discord_id" placeholder="e.g. 123456789012345678">
+                    </div>
+                    <div class="input-group">
+                        <label for="discord_username">Discord Username</label>
+                        <input type="text" id="discord_username" name="discord_username" placeholder="e.g. goldship#1234">
+                    </div>
                 </div>
-                <div class="input-group">
-                    <label for="ingame_name">In-Game Name</label>
-                    <input type="text" id="ingame_name" name="ingame_name" required placeholder="e.g. GoldShip">
+                <div>
+
+                    <button type="submit" class="submit-btn">Add Member</button>
                 </div>
-                <div class="input-group">
-                    <label for="discord_id">Discord ID</label>
-                    <input type="text" id="discord_id" name="discord_id" placeholder="e.g. 123456789012345678">
-                </div>
-                <div class="input-group">
-                    <label for="discord_username">Discord Username</label>
-                    <input type="text" id="discord_username" name="discord_username" placeholder="e.g. goldship#1234">
-                </div>
-                <button type="submit" class="submit-btn">Add Member</button>
             </form>
         </section>
 

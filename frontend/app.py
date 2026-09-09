@@ -1,5 +1,7 @@
 import os
 import requests
+import datetime
+
 from flask import Flask, flash, flash, render_template, request, redirect, url_for
 from dotenv import load_dotenv
 
@@ -110,10 +112,11 @@ def delete_member(discord_id):
 
 @app.route('/fans')
 def fans():
+    now = datetime.datetime.now()
     month = request.args.get('month')
     year = request.args.get('year')
-    month = int(month) if month else None
-    year = int(year) if year else None
+    month = int(month) if month else now.month
+    year = int(year) if year else now.year
 
     # Get available months
     reqs = []
@@ -245,6 +248,27 @@ def send_discord():
         print(f"Error sending report to Discord: {e}")
      
     return redirect(url_for('fans', year=year, month=month))
+
+@app.route('/sync_data', methods=['POST'])
+def sync_data():
+    redirect_to = request.form.get('redirect_to', 'index')
+    year = request.form.get('year')
+    month = request.form.get('month')
+
+    try:
+        response = requests.post(f"{api_url}/full_update", headers=headers)
+        if response.status_code != 200:
+            print(f"Error syncing data via API: {response.text}")
+            flash('Error syncing data from API', 'error')
+        else:
+            flash('Data synced successfully', 'success')
+    except Exception as e:
+        print(f"Error syncing data: {e}")
+        flash('Error connecting to API for data sync', 'error')
+
+    if redirect_to == 'fans':
+        return redirect(url_for('fans', year=year, month=month))
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

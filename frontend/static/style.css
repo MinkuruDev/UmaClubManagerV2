@@ -72,10 +72,16 @@ h2 {
 }
 
 .add-form {
-    display: grid;
+    /* display: grid;  */
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
     align-items: end;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
 }
 
 .input-group {
@@ -121,6 +127,7 @@ button {
     background: var(--primary);
     color: white;
     width: 100%;
+    margin-top: 1rem;
 }
 
 .submit-btn:hover {
@@ -200,28 +207,49 @@ tr:hover td {
 .fan-controls {
     display: flex;
     flex-wrap: wrap;
-    gap: 2rem;
+    gap: 1.5rem;
     align-items: center;
 }
 
 .inline-form {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
+    gap: 1.5rem;
+    flex-wrap: wrap;
 }
 
 select {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
     border-radius: 8px;
     border: 1px solid var(--input-border);
     background: var(--input-bg);
     color: var(--text-main);
     font-family: inherit;
     font-size: 1rem;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    transition: all 0.3s ease;
+    min-width: 150px;
+}
+
+select:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    background-color: rgba(0, 0, 0, 0.35);
+    transform: translateY(-1px);
+}
+
+select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
 }
 
 select option {
     background: #1e1b4b;
-    color: white;
+    color: var(--text-main);
+    padding: 0.5rem;
 }
 
 .upload-form {
