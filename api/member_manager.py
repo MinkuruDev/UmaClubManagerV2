@@ -40,6 +40,9 @@ def add_or_update_member(id, **kwargs):
             members_data["discord_link"] = {}
         members_data["discord_link"][discord_id] = id
 
+    if "leader" in members_data[id] and "leader" not in kwargs:
+        members_data[id].pop("leader", None)
+
 def load_from_raw_file(club_profile_path):
     with open(club_profile_path, 'r') as f:
         club_profile = json.load(f)
@@ -47,11 +50,19 @@ def load_from_raw_file(club_profile_path):
     for member in club_profile.get('club_friend_profile', []):
         ingame_id = member.get('friend_viewer_id')
         if ingame_id:
-            add_or_update_member(str(ingame_id),
-                ingame_id=str(ingame_id),
-                ingame_name=member.get('name'),
-                join_time=member.get('join_time'),
-            )
+            if member.get('membership') == 3:
+                add_or_update_member(str(ingame_id),
+                    ingame_id=str(ingame_id),
+                    ingame_name=member.get('name'),
+                    join_time=member.get('join_time'),
+                    leader=True
+                )
+            else:
+                add_or_update_member(str(ingame_id),
+                    ingame_id=str(ingame_id),
+                    ingame_name=member.get('name'),
+                    join_time=member.get('join_time'),
+                )
     
     current_member = club_profile['club'][0]['circle_user_array']
     current_member.sort()

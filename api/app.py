@@ -32,13 +32,15 @@ raw_data = {}
 def load_raw_data():
     global raw_data
     path = f"{DATA_DIR}/club_profile.json"
+    if not os.path.exists(path):
+        return
     with open(path) as f:
         raw_data = json.load(f)
 load_raw_data()
 
 def latest_game_date():
-    now = datetime.datetime.now()
-    if now.hour < 17:
+    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    if now.hour < 10:
         report_day = now - datetime.timedelta(days=2)
     else:
         report_day = now - datetime.timedelta(days=1)

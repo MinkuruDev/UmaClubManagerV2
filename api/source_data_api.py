@@ -47,13 +47,3 @@ def fetch_club_profile() -> Tuple[bool, str]:
     else:
         print(f"Failed to fetch data: {response.status_code} - {response.text}")
         return False, "Failed to fetch club profile data"
-
-if not os.path.exists("../data"):
-    os.makedirs("../data")
-if not os.path.exists("../data/club_profile.json"):
-    choice = input("club_profile.json does not exist. Do you want to fetch it from the source? (Y/n): ")
-    if choice.lower() == "y" or choice == "":
-        updated, reason = fetch_club_profile()
-        if not updated:
-            print(f"Failed to fetch data: {reason}")
-

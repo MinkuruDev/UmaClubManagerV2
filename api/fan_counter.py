@@ -144,8 +144,8 @@ def load_from_raw_file(club_profile_path):
     with open(club_profile_path, 'r') as f:
         club_profile = json.load(f)
 
-    now = datetime.datetime.now()
-    if now.hour < 17:
+    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    if now.hour < 10:
         report_day = now - datetime.timedelta(days=2)
     else:
         report_day = now - datetime.timedelta(days=1)
@@ -185,6 +185,7 @@ def load_from_raw_file(club_profile_path):
         saving_data["total"][ingame_id] = total_history + daily_fan
 
     current_year_month = f"{year}/{month:02d}"
+    os.makedirs(os.path.join(_FAN_DATA_DIR, f"{year}"), exist_ok=True)
     output_file_path = os.path.join(_FAN_DATA_DIR, f"{current_year_month}.json")
     with open(output_file_path, 'w') as f:
         json.dump(saving_data, f, indent=4)
@@ -384,4 +385,3 @@ if __name__ == "__main__":
     # Example usage: Load from a raw club profile JSON file and save to fan data
     club_profile_path = "../data/club_profile.json"  # Path to the raw club profile JSON file
     load_from_raw_file(club_profile_path)
-    transform_json_to_csv("../data/fan/202607.json")
