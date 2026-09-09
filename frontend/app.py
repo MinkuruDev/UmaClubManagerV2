@@ -259,7 +259,7 @@ def sync_data():
         response = requests.post(f"{api_url}/full_update", headers=headers)
         if response.status_code != 200:
             print(f"Error syncing data via API: {response.text}")
-            flash('Error syncing data from API', 'error')
+            flash('Error syncing data from API: ' + response.text, 'error')
         else:
             flash('Data synced successfully', 'success')
     except Exception as e:

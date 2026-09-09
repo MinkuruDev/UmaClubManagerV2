@@ -20,30 +20,30 @@
         </header>
 
         <section class="form-section glass-panel">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2 style="margin: 0;">Add New Member</h2>
-                <form action="/sync_data" method="POST" style="margin: 0;">
+            <div class="section-header">
+                <h2>Add New Member</h2>
+                <form action="/sync_data" method="POST">
                     <input type="hidden" name="redirect_to" value="index">
-                    <button type="submit" class="submit-btn" style="background: #2563eb; width: auto; font-size: 0.9rem; margin-top: 0;">Sync Data</button>
+                    <button type="submit" class="btn-sync">Sync Data</button>
                 </form>
             </div>
             <form action="/add" method="POST" class="add-form">
                 <div class="grid">
                     <div class="input-group">
                         <label for="ingame_id">In-Game ID</label>
-                        <input type="text" id="ingame_id" name="ingame_id" required placeholder="e.g. 123456789">
+                        <input type="text" id="ingame_id" name="ingame_id" required placeholder="e.g. 20150310">
                     </div>
                     <div class="input-group">
                         <label for="ingame_name">In-Game Name</label>
-                        <input type="text" id="ingame_name" name="ingame_name" required placeholder="e.g. GoldShip">
+                        <input type="text" id="ingame_name" name="ingame_name" required placeholder="e.g. Almond Eye">
                     </div>
                     <div class="input-group">
                         <label for="discord_id">Discord ID</label>
-                        <input type="text" id="discord_id" name="discord_id" placeholder="e.g. 123456789012345678">
+                        <input type="text" id="discord_id" name="discord_id" placeholder="e.g. 2015031020201129">
                     </div>
                     <div class="input-group">
                         <label for="discord_username">Discord Username</label>
-                        <input type="text" id="discord_username" name="discord_username" placeholder="e.g. goldship#1234">
+                        <input type="text" id="discord_username" name="discord_username" placeholder="e.g. cucumber">
                     </div>
                 </div>
                 <div>
@@ -101,7 +101,7 @@
                             <td>{{ member.discord_username }}</td>
                             <td class="action-buttons">
                                 <button type="button" class="edit-btn" onclick="openEditModal('{{ member.ingame_id }}', '{{ member.ingame_name }}', '{{ member.discord_id }}', '{{ member.discord_username }}')">Edit</button>
-                                <form action="/delete/{{ member.discord_id }}" method="POST" style="display:inline;">
+                                <form action="/delete/{{ member.discord_id }}" method="POST" class="form-inline">
                                     <button type="submit" class="delete-btn" onclick="return confirm(`Are you sure you want to unlink {{ member.discord_username }}?`)">Unlink</button>
                                 </form>
                             </td>
@@ -111,7 +111,7 @@
                             <td colspan="5" class="empty-state">No linked members found.</td>
                         </tr>
                         {% endfor %}
-                        <tr class="no-results-row" style="display: none;">
+                        <tr class="no-results-row">
                             <td colspan="5" class="empty-state">No matching members found.</td>
                         </tr>
                     </tbody>
@@ -138,8 +138,8 @@
                         <tr>
                             <td>{{ member.ingame_id }}</td>
                             <td class="name-cell">{{ member.ingame_name }}</td>
-                            <td><span style="color: var(--text-muted); font-style: italic;">unlinked</span></td>
-                            <td><span style="color: var(--text-muted); font-style: italic;">unlinked</span></td>
+                            <td><span class="unlinked-tag">unlinked</span></td>
+                            <td><span class="unlinked-tag">unlinked</span></td>
                             <td class="action-buttons">
                                 <button type="button" class="edit-btn" onclick="openEditModal('{{ member.ingame_id }}', '{{ member.ingame_name }}', '{{ member.discord_id }}', '{{ member.discord_username }}')">Edit</button>
                             </td>
@@ -149,7 +149,7 @@
                             <td colspan="5" class="empty-state">All members have Discord accounts linked!</td>
                         </tr>
                         {% endfor %}
-                        <tr class="no-results-row" style="display: none;">
+                        <tr class="no-results-row">
                             <td colspan="5" class="empty-state">No matching members found.</td>
                         </tr>
                     </tbody>
@@ -163,10 +163,10 @@
         <div class="modal-content glass-panel">
             <span class="close-btn" onclick="closeEditModal()">&times;</span>
             <h2>Edit Member Details</h2>
-            <form id="editForm" action="" method="POST" class="add-form" style="grid-template-columns: 1fr;">
+            <form id="editForm" action="" method="POST" class="add-form modal-form">
                 <div class="input-group">
                     <label for="edit_display_id">In-Game ID (Read-only)</label>
-                    <input type="text" id="edit_display_id" disabled style="opacity: 0.6; cursor: not-allowed;">
+                    <input type="text" id="edit_display_id" disabled>
                 </div>
                 <div class="input-group">
                     <label for="edit_ingame_name">In-Game Name</label>
@@ -180,7 +180,7 @@
                     <label for="edit_discord_username">Discord Username</label>
                     <input type="text" id="edit_discord_username" name="discord_username" placeholder="e.g. goldship#1234">
                 </div>
-                <button type="submit" class="submit-btn" style="margin-top: 1rem;">Save Changes</button>
+                <button type="submit" class="submit-btn mt-1">Save Changes</button>
             </form>
         </div>
     </div>

@@ -43,13 +43,13 @@
         </header>
 
         <section class="form-section glass-panel">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2 style="margin: 0;">Select Year and Month Data</h2>
-                <form action="/sync_data" method="POST" style="margin: 0;">
+            <div class="section-header">
+                <h2>Select Year and Month Data</h2>
+                <form action="/sync_data" method="POST">
                     <input type="hidden" name="redirect_to" value="fans">
                     <input type="hidden" name="month" value="{{ selected_month }}">
                     <input type="hidden" name="year" value="{{ selected_year }}">
-                    <button type="submit" class="submit-btn" style="background: #2563eb; width: auto; font-size: 0.9rem; margin-top: 0;">Sync Data</button>
+                    <button type="submit" class="btn-sync">Sync Data</button>
                 </form>
             </div>
             <div class="fan-controls">
@@ -77,7 +77,7 @@
         </section>
 
         {% if selected_month and selected_year %}
-        <section class="requirements-section glass-panel" style="margin-bottom: 2rem;">
+        <section class="requirements-section glass-panel mb-2">
             <h2>Fan Requirements Configuration</h2>
             <div class="table-container">
                 <table>
@@ -96,7 +96,7 @@
                             <td>Day {{ req.to }}</td>
                             <td>{{ "{:,}".format(req.req) }}</td>
                             <td>
-                                <form action="/delete_requirement" method="POST" style="display:inline;">
+                                <form action="/delete_requirement" method="POST" class="form-inline">
                                     <input type="hidden" name="year" value="{{ selected_year }}">
                                     <input type="hidden" name="month" value="{{ selected_month }}">
                                     <input type="hidden" name="from_day" value="{{ req.from }}">
@@ -116,7 +116,7 @@
                 </table>
             </div>
             
-            <form action="/add_requirement" method="POST" class="add-form" style="margin-top: 1.5rem;">
+            <form action="/add_requirement" method="POST" class="add-form mt-1-5">
                 <input type="hidden" name="month" value="{{ selected_month }}">
                 <input type="hidden" name="year" value="{{ selected_year }}">
                 <div class="grid">
@@ -155,15 +155,15 @@
         {% endwith %}
 
         <section class="list-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2 style="margin: 0;">Tracking Data up to Day {{ latest_day }}</h2>
+            <div class="section-header">
+                <h2>Tracking Data up to Day {{ latest_day }}</h2>
                 {% if fan_rows %}
-                <form action="/send_discord" method="POST" style="margin: 0;">
+                <form action="/send_discord" method="POST">
                     <input type="hidden" name="month" value="{{ selected_month }}">
                     <input type="hidden" name="year" value="{{ selected_year }}">
                     <input type="hidden" name="fan_rows_json" value='{{ fan_rows | tojson }}'>
                     <input type="hidden" name="latest_day" value='{{ latest_day }}'>
-                    <button type="submit" class="submit-btn" style="background: #5865F2; width: auto; font-size: 0.9rem;">Send Report to Discord</button>
+                    <button type="submit" class="btn-discord">Send Report to Discord</button>
                 </form>
                 {% endif %}
             </div>
@@ -176,9 +176,9 @@
                             <th>Day {{ latest_day }}</th>
                             <th>Monthly Total</th>
                             <th>Expected</th>
-                            <th>Extra<button type="button" onclick="toggleEditMode('edit-extra-mode')" style="background: transparent; border: none; cursor: pointer; filter: grayscale(1);">✏️</button></th>
+                            <th>Extra<button type="button" class="icon-edit-btn" onclick="toggleEditMode('edit-extra-mode')">✏️</button></th>
                             <th>Status</th>
-                            <th>Exemption <button type="button" onclick="toggleEditMode('edit-exempt-mode')" style="background: transparent; border: none; cursor: pointer; filter: grayscale(1);">✏️</button></th>
+                            <th>Exemption <button type="button" class="icon-edit-btn" onclick="toggleEditMode('edit-exempt-mode')">✏️</button></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -190,43 +190,43 @@
                             <td>{{ "{:,}".format(row.expected) }}</td>
                             <td>
                                 <span class="extra-text-view">{{ "{:,}".format(row.extra) if row.extra else '-' }}</span>
-                                <form class="extra-form-view" action="/set_extra" method="POST" style="gap: 0.5rem; justify-content: center; align-items: center;">
+                                <form class="extra-form-view form-flex-center" action="/set_extra" method="POST">
                                     <input type="hidden" name="month" value="{{ selected_month }}">
                                     <input type="hidden" name="year" value="{{ selected_year }}">
                                     <input type="hidden" name="ingame_id" value="{{ row.ingame_id }}">
-                                    <input type="text" inputmode="numeric" pattern="-?[0-9]*" name="extra" value="{{ row.extra if row.extra != 0 else '' }}" placeholder="0" style="padding: 0.2rem 0.5rem; width: 80px; font-size: 0.8rem;">
-                                    <button type="submit" class="submit-btn" style="padding: 0.2rem 0.5rem; width: auto; font-size: 0.8rem; border: 1px solid rgba(255,255,255,0.2);">Save</button>
+                                    <input type="text" inputmode="numeric" pattern="-?[0-9]*" name="extra" value="{{ row.extra if row.extra != 0 else '' }}" placeholder="0" class="input-sm-80">
+                                    <button type="submit" class="submit-btn btn-sm">Save</button>
                                 </form>
                             </td>
-                            <td style="text-transform: capitalize;">{{ row.status }}</td>
+                            <td class="capitalize-text">{{ row.status }}</td>
                             <td>
                                 <span class="exempt-text-view">
                                     {% if row.exempt %}
-                                        <span style="font-size: 0.8rem; color: #f472b6; font-weight: 600;">Exempt: {{ row.exempt }}</span>
+                                        <span class="exempt-badge">Exempt: {{ row.exempt }}</span>
                                     {% else %}
-                                        <span style="color: var(--text-muted);">-</span>
+                                        <span class="muted-dash">-</span>
                                     {% endif %}
                                 </span>
                                 <div class="exempt-form-view">
                                     {% if row.exempt %}
-                                        <span style="font-size: 0.8rem; color: #f472b6; font-weight: 600;">Exempt: {{ row.exempt }}</span>
-                                        <form action="/set_exemption" method="POST" style="display:inline;">
+                                        <span class="exempt-badge">Exempt: {{ row.exempt }}</span>
+                                        <form action="/set_exemption" method="POST" class="form-inline">
                                             <input type="hidden" name="month" value="{{ selected_month }}">
                                             <input type="hidden" name="year" value="{{ selected_year }}">
                                             <input type="hidden" name="ingame_id" value="{{ row.ingame_id }}">
                                             <input type="hidden" name="reason" value="">
-                                            <button type="submit" class="delete-btn" style="padding: 0.2rem 0.5rem; margin-left: 0.5rem;">Clear</button>
+                                            <button type="submit" class="delete-btn btn-sm-delete">Clear</button>
                                         </form>
                                     {% elif row.status == 'awful' or row.status == 'bad' %}
-                                        <form action="/set_exemption" method="POST" style="display: flex; gap: 0.5rem; justify-content: center;">
+                                        <form action="/set_exemption" method="POST" class="form-flex-center">
                                             <input type="hidden" name="month" value="{{ selected_month }}">
                                             <input type="hidden" name="year" value="{{ selected_year }}">
                                             <input type="hidden" name="ingame_id" value="{{ row.ingame_id }}">
-                                            <input type="text" name="reason" placeholder="Reason..." required style="padding: 0.2rem 0.5rem; width: 120px; font-size: 0.8rem;">
-                                            <button type="submit" class="submit-btn" style="padding: 0.2rem 0.5rem; width: auto; font-size: 0.8rem;">Exempt</button>
+                                            <input type="text" name="reason" placeholder="Reason..." required class="input-sm-120">
+                                            <button type="submit" class="submit-btn btn-sm">Exempt</button>
                                         </form>
                                     {% else %}
-                                        <span style="color: var(--text-muted);">-</span>
+                                        <span class="muted-dash">-</span>
                                     {% endif %}
                                 </div>
                             </td>
