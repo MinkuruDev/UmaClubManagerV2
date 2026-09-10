@@ -7,13 +7,30 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link id="theme-stylesheet" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let mode = urlParams.get('mode');
+            if (mode === 'dark') {
+                localStorage.setItem('theme', 'dark');
+            } else if (mode === 'light') {
+                localStorage.setItem('theme', 'light');
+            } else {
+                mode = localStorage.getItem('theme') || 'light';
+            }
+        })();
+    </script>
 </head>
 <body>
     <div class="container">
         <nav class="top-nav">
             <a href="/" class="active">Members</a>
             <a href="/fans">Fan Progress</a>
+            <button type="button" id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Light/Dark Theme">
+                <span id="theme-toggle-icon">🌙</span>
+                <span id="theme-toggle-text">Dark</span>
+            </button>
         </nav>
         <header>
             <h1>Uma Club Manager</h1>
@@ -255,6 +272,103 @@
                 closeEditModal();
             }
         }
+
+        function toggleTheme() {
+            const themeLink = document.getElementById('theme-stylesheet');
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentMode = localStorage.getItem('theme') || (urlParams.get('mode') === 'dark' ? 'dark' : 'light');
+            const newMode = (currentMode === 'dark') ? 'light' : 'dark';
+
+            localStorage.setItem('theme', newMode);
+
+            const lightUrl = "{{ url_for('static', filename='style.css') }}";
+            const darkUrl = "{{ url_for('static', filename='dark_style.css') }}";
+
+            if (newMode === 'dark') {
+                themeLink.href = darkUrl;
+            } else {
+                themeLink.href = lightUrl;
+            }
+
+            const url = new URL(window.location.href);
+            url.searchParams.set('mode', newMode);
+            window.history.replaceState(null, '', url.toString());
+
+            updateToggleUI(newMode);
+            updatePlaceholder(newMode);
+            updatePreservedModeInFormsAndLinks(newMode);
+        }
+
+        function updateToggleUI(mode) {
+            const icon = document.getElementById('theme-toggle-icon');
+            const text = document.getElementById('theme-toggle-text');
+            if (icon && text) {
+                if (mode === 'dark') {
+                    icon.textContent = '☀️';
+                    text.textContent = 'Light';
+                } else {
+                    icon.textContent = '🌙';
+                    text.textContent = 'Dark';
+                }
+            }
+        }
+
+        function updatePlaceholder(mode){
+            ingame_id_input = document.getElementById('ingame_id');
+            ingame_name_input = document.getElementById('ingame_name');
+            discord_id_input = document.getElementById('discord_id');
+            discord_username_input = document.getElementById('discord_username');
+            if (mode === 'light') {
+                ingame_id_input.placeholder = "e.g. 20150310";
+                ingame_name_input.placeholder = "e.g. Almond Eye";
+                discord_id_input.placeholder = "e.g. 2015031020201129";
+                discord_username_input.placeholder = "e.g. cucumber";
+            } else {
+                ingame_id_input.placeholder = "e.g. 19830409";
+                ingame_name_input.placeholder = "e.g. Mejiro Ramonu";
+                discord_id_input.placeholder = "e.g. 1983040919861221";
+                discord_username_input.placeholder = "e.g. ramonu";
+            }
+        }
+
+        function updatePreservedModeInFormsAndLinks(mode) {
+            document.querySelectorAll('form[method="GET"], form[method="get"]').forEach(form => {
+                let modeInput = form.querySelector('input[name="mode"]');
+                if (!modeInput) {
+                    modeInput = document.createElement('input');
+                    modeInput.type = 'hidden';
+                    modeInput.name = 'mode';
+                    form.appendChild(modeInput);
+                }
+                modeInput.value = mode;
+            });
+
+            document.querySelectorAll('.top-nav a').forEach(a => {
+                try {
+                    const linkUrl = new URL(a.href, window.location.origin);
+                    linkUrl.searchParams.set('mode', mode);
+                    a.href = linkUrl.toString();
+                } catch (e) {}
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let mode = urlParams.get('mode');
+            if (mode === 'dark') {
+                localStorage.setItem('theme', 'dark');
+            } else if (mode === 'light') {
+                localStorage.setItem('theme', 'light');
+            } else {
+                mode = localStorage.getItem('theme') || 'light';
+            }
+            if (mode === 'dark') {
+                document.getElementById('theme-stylesheet').href = "{{ url_for('static', filename='dark_style.css') }}";
+            }
+            updateToggleUI(mode);
+            updatePreservedModeInFormsAndLinks(mode);
+            updatePlaceholder(mode);
+        });
     </script>
 </body>
 </html>
