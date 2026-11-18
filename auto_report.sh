@@ -21,4 +21,8 @@ while [ $count -lt $attempts ]; do
     sleep $((60 * $count))
 done
 
+source .venv/bin/activate
+cd "$SCRIPT_DIR/sheet"
+python gen_sheet.py
+
 echo "$(date) Finished $0"

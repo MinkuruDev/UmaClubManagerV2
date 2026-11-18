@@ -9,3 +9,4 @@ fastapi[standard]
 discord.py
 pandas
 matplotlib
+gspread
