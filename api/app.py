@@ -71,6 +71,11 @@ def get_raw_data(fields: str = ""):
     except Exception as e:
         raise HTTPException(status_code=500, detail=e)
 
+@app.get("/latest_date")
+def get_latest_date():
+    year, month, day = latest_game_date()
+    return {"year": year, "month": month, "day": day}
+
 @app.post("/full_update")
 def full_update(_=Depends(require_admin)):
     updated, reason = source_data_api.fetch_club_profile()

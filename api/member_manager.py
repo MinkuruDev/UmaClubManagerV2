@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class Member(BaseModel):
     ingame_id: str
     ingame_name: str = None
+    leader: bool = None
     join_time: str = None
     discord_id: str = None
     discord_username: str = None
